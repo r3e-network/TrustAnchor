@@ -53,7 +53,10 @@ public sealed class TrustAnchorFixture
     public UInt160 OtherHash { get; }
     public UInt160 StrategistHash { get; }
     public UInt160 StrangerHash { get; }
+    private readonly UInt160[] _agentHashes;
+
     public UInt160 AgentHash { get; }
+    public IReadOnlyList<UInt160> AgentHashes => _agentHashes;
 
     public TrustAnchorFixture()
     {
@@ -86,8 +89,15 @@ public sealed class TrustAnchorFixture
 
         var agentSource = TestAgentSource();
         var (agentNef, agentManifest) = CompileSource(agentSource);
-        var agentContract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(agentNef, agentManifest, null, null);
-        AgentHash = agentContract.Hash;
+        _agentHashes = new UInt160[21];
+        for (int i = 0; i < _agentHashes.Length; i++)
+        {
+            var deployer = new UInt160(Enumerable.Repeat((byte)(i + 1), 20).ToArray());
+            _engine.SetTransactionSigners(new[] { new Signer { Account = deployer, Scopes = WitnessScope.CalledByEntry } });
+            var agentContract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(agentNef, agentManifest, null, null);
+            _agentHashes[i] = agentContract.Hash;
+        }
+        AgentHash = _agentHashes[0];
     }
 
     public T Call<T>(string operation, params object[] args)
@@ -113,22 +123,45 @@ public sealed class TrustAnchorFixture
         Invoke(TrustHash, "setAgent", new BigInteger(index), agent);
     }
 
-    public void SetStrategist(UInt160 strategist)
+    public void SetAllAgents()
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "setStrategist", strategist);
+        for (int i = 0; i < _agentHashes.Length; i++)
+        {
+            Invoke(TrustHash, "setAgent", new BigInteger(i), _agentHashes[i]);
+        }
     }
 
-    public void AllowCandidate(ECPoint candidate)
+    public void BeginConfig()
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "allowCandidate", candidate);
+        Invoke(TrustHash, "beginConfig");
     }
 
-    public void DisallowCandidate(ECPoint candidate)
+    public void SetAgentConfig(int index, ECPoint candidate, BigInteger weight)
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "disallowCandidate", candidate);
+        Invoke(TrustHash, "setAgentConfig", new BigInteger(index), candidate, weight);
+    }
+
+    public void SetRemainingAgentConfigs(int startIndex, BigInteger weight)
+    {
+        for (int i = startIndex; i < _agentHashes.Length; i++)
+        {
+            SetAgentConfig(i, AgentCandidate(i), weight);
+        }
+    }
+
+    public void FinalizeConfig()
+    {
+        _engine.SetTransactionSigners(new[] { _ownerSigner });
+        Invoke(TrustHash, "finalizeConfig");
+    }
+
+    public void RebalanceVotes()
+    {
+        _engine.SetTransactionSigners(new[] { _ownerSigner });
+        Invoke(TrustHash, "rebalanceVotes");
     }
 
     public void MintNeo(UInt160 to, int amount)
@@ -173,19 +206,24 @@ public sealed class TrustAnchorFixture
         return _engine.Native.NEO.BalanceOf(account) ?? BigInteger.Zero;
     }
 
-    public UInt160 AgentLastTransferTo()
+    public UInt160 AgentLastTransferTo(int index = 0)
     {
-        return CallContract<UInt160>(AgentHash, "lastTransferTo");
+        return CallContract<UInt160>(_agentHashes[index], "lastTransferTo");
     }
 
-    public BigInteger AgentLastTransferAmount()
+    public BigInteger AgentLastTransferAmount(int index = 0)
     {
-        return CallContract<BigInteger>(AgentHash, "lastTransferAmount");
+        return CallContract<BigInteger>(_agentHashes[index], "lastTransferAmount");
     }
 
-    public ECPoint AgentLastVote()
+    public ECPoint AgentLastVote(int index = 0)
     {
-        return CallContract<ECPoint>(AgentHash, "lastVote");
+        return CallContract<ECPoint>(_agentHashes[index], "lastVote");
+    }
+
+    public ECPoint AgentCandidate(int index)
+    {
+        return ECCurve.Secp256r1.G * new byte[] { (byte)(index + 1) };
     }
 
     private UInt160 SelectNeoFundingAccount()

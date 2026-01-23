@@ -25,7 +25,11 @@ public class TrustAnchorTests
     public void Neo_deposit_increases_stake_and_totalstake()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.OwnerHash);
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
         Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
@@ -36,7 +40,11 @@ public class TrustAnchorTests
     public void Gas_reward_accrues_and_can_be_claimed()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.OwnerHash);
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
@@ -54,7 +62,11 @@ public class TrustAnchorTests
     public void Withdraw_reduces_stake_and_transfers_neo_from_agent()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 3);
 
@@ -69,26 +81,14 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void TrigVote_requires_strategist_and_whitelisted_candidate()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
-        var candidate = fixture.OwnerPubKey;
-
-        AssertFault(() => fixture.CallFrom(fixture.StrangerHash, "trigVote", 0, candidate));
-
-        fixture.AllowCandidate(candidate);
-        fixture.SetStrategist(fixture.StrategistHash);
-        fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, candidate);
-
-        Assert.Equal(candidate, fixture.AgentLastVote());
-    }
-
-    [Fact]
     public void Withdraw_over_balance_faults()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
@@ -99,41 +99,14 @@ public class TrustAnchorTests
     public void Withdraw_zero_amount_faults()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
 
         AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 0));
-    }
-
-    [Fact]
-    public void TrigTransfer_requires_strategist()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
-
-        AssertFault(() => fixture.CallFrom(fixture.StrangerHash, "trigTransfer", 0, 0, 1));
-    }
-
-    [Fact]
-    public void TrigVote_requires_whitelisted_candidate()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
-        fixture.SetStrategist(fixture.StrategistHash);
-
-        AssertFault(() => fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, fixture.OwnerPubKey));
-    }
-
-    [Fact]
-    public void TrigVote_fails_after_candidate_disallowed()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.SetAgent(0, fixture.AgentHash);
-        fixture.AllowCandidate(fixture.OwnerPubKey);
-        fixture.DisallowCandidate(fixture.OwnerPubKey);
-        fixture.SetStrategist(fixture.StrategistHash);
-
-        AssertFault(() => fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, fixture.OwnerPubKey));
     }
 }
