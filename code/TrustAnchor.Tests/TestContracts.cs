@@ -125,6 +125,12 @@ public sealed class TrustAnchorFixture
         Invoke(TrustHash, "allowCandidate", candidate);
     }
 
+    public void DisallowCandidate(ECPoint candidate)
+    {
+        _engine.SetTransactionSigners(new[] { _ownerSigner });
+        Invoke(TrustHash, "disallowCandidate", candidate);
+    }
+
     public void MintNeo(UInt160 to, int amount)
     {
         var funding = SelectNeoFundingAccount();

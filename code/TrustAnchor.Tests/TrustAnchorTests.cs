@@ -112,4 +112,26 @@ public class TrustAnchorTests
 
         AssertFault(() => fixture.CallFrom(fixture.StrangerHash, "trigTransfer", 0, 0, 1));
     }
+
+    [Fact]
+    public void TrigVote_requires_whitelisted_candidate()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.SetStrategist(fixture.StrategistHash);
+
+        AssertFault(() => fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, fixture.OwnerPubKey));
+    }
+
+    [Fact]
+    public void TrigVote_fails_after_candidate_disallowed()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.AllowCandidate(fixture.OwnerPubKey);
+        fixture.DisallowCandidate(fixture.OwnerPubKey);
+        fixture.SetStrategist(fixture.StrategistHash);
+
+        AssertFault(() => fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, fixture.OwnerPubKey));
+    }
 }
