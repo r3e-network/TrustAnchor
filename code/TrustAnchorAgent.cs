@@ -9,8 +9,8 @@ using Neo.SmartContract.Framework.Attributes;
 
 namespace TrustAnchor
 {
-    [ManifestExtra("Author", "TrustAnchor")]
-    [ManifestExtra("Email", "developer@neo.org")]
+    [ManifestExtra("Author", "developer@r3e.network")]
+    [ManifestExtra("Email", "developer@r3e.network")]
     [ManifestExtra("Description", "TrustAnchor Agent Contract")]
     [ContractPermission("*", "*")]
     public class TrustAnchorAgent : SmartContract

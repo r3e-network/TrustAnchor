@@ -9,21 +9,29 @@ using ContractParameterType = Neo.SmartContract.Framework.ContractParameterType;
 
 namespace TrustAnchor
 {
-    [ManifestExtra("Author", "TrustAnchor")]
-    [ManifestExtra("Email", "developer@neo.org")]
+    [ManifestExtra("Author", "developer@r3e.network")]
+    [ManifestExtra("Email", "developer@r3e.network")]
     [ManifestExtra("Description", "TrustAnchor Core Contract")]
     [ContractPermission("*", "*")]
     public class TrustAnchor : SmartContract
     {
         private const byte PREFIXOWNER = 0x01;
         private const byte PREFIXAGENT = 0x02;
-        private const byte PREFIXSTRATEGIST = 0x03;
         private const byte PREFIXREWARDPERTOKENSTORED = 0x04;
         private const byte PREFIXREWARD = 0x05;
         private const byte PREFIXPAID = 0x06;
-        private const byte PREFIXCANDIDATEWHITELIST = 0x07;
         private const byte PREFIXSTAKE = 0x08;
         private const byte PREFIXTOTALSTAKE = 0x09;
+
+        private const byte PREFIXCONFIGREADY = 0x10;
+        private const byte PREFIXAGENTTARGET = 0x11;
+        private const byte PREFIXAGENTWEIGHT = 0x12;
+        private const byte PREFIXPENDINGACTIVE = 0x20;
+        private const byte PREFIXPENDINGAGENTTARGET = 0x21;
+        private const byte PREFIXPENDINGAGENTWEIGHT = 0x22;
+
+        private const int MAXAGENTS = 21;
+        private const int TOTALWEIGHT = 21;
 
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
 
@@ -32,8 +40,8 @@ namespace TrustAnchor
 
         public static UInt160 Owner() => (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });
         public static UInt160 Agent(BigInteger i) => (UInt160)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
-        public static UInt160 Strategist() => (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST });
-        public static ByteString Candidate(ECPoint target) => new StorageMap(Storage.CurrentContext, PREFIXCANDIDATEWHITELIST).Get(target);
+        public static ECPoint AgentTarget(BigInteger i) => (ECPoint)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENTTARGET).Get((ByteString)i);
+        public static BigInteger AgentWeight(BigInteger i) => GetWeight(new StorageMap(Storage.CurrentContext, PREFIXAGENTWEIGHT), i);
         public static BigInteger RPS() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED });
         public static BigInteger TotalStake() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE });
         public static BigInteger StakeOf(UInt160 account) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXSTAKE).Get(account);
@@ -43,7 +51,6 @@ namespace TrustAnchor
         {
             if (update) return;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, DEFAULT_OWNER);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, DEFAULT_OWNER);
         }
 
         public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
@@ -133,17 +140,74 @@ namespace TrustAnchor
             }
         }
 
-        public static void TrigVote(BigInteger i, ECPoint target)
+        public static void BeginConfig()
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Strategist()));
-            ExecutionEngine.Assert(new StorageMap(Storage.CurrentContext, PREFIXCANDIDATEWHITELIST).Get(target) is not null);
-            Contract.Call(Agent(i), "vote", CallFlags.All, new object[] { target });
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXPENDINGACTIVE }, 1);
+            StorageMap pendingTargets = new(Storage.CurrentContext, PREFIXPENDINGAGENTTARGET);
+            StorageMap pendingWeights = new(Storage.CurrentContext, PREFIXPENDINGAGENTWEIGHT);
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                pendingTargets.Delete(AgentKey(i));
+                pendingWeights.Delete(AgentKey(i));
+            }
         }
-        public static void TrigTransfer(BigInteger i, BigInteger j, BigInteger amount)
+
+        public static void SetAgentConfig(BigInteger index, ECPoint target, BigInteger weight)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Strategist()));
-            Contract.Call(Agent(i), "transfer", CallFlags.All, new object[] { Agent(j), amount });
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPendingConfigActive());
+            ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS);
+            ExecutionEngine.Assert(weight >= 0);
+            StorageMap pendingTargets = new(Storage.CurrentContext, PREFIXPENDINGAGENTTARGET);
+            StorageMap pendingWeights = new(Storage.CurrentContext, PREFIXPENDINGAGENTWEIGHT);
+            pendingTargets.Put((ByteString)index, target);
+            pendingWeights.Put((ByteString)index, weight);
         }
+
+        public static void FinalizeConfig()
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPendingConfigActive());
+            StorageMap pendingTargets = new(Storage.CurrentContext, PREFIXPENDINGAGENTTARGET);
+            StorageMap pendingWeights = new(Storage.CurrentContext, PREFIXPENDINGAGENTWEIGHT);
+            BigInteger totalWeight = 0;
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                ByteString target = pendingTargets.Get(AgentKey(i));
+                ByteString weightBytes = pendingWeights.Get(AgentKey(i));
+                ExecutionEngine.Assert(target is not null);
+                ExecutionEngine.Assert(weightBytes is not null);
+                BigInteger weight = (BigInteger)weightBytes;
+                ExecutionEngine.Assert(weight >= 0);
+                totalWeight += weight;
+            }
+            ExecutionEngine.Assert(totalWeight == TOTALWEIGHT);
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                ByteString target = pendingTargets.Get(AgentKey(i));
+                for (int j = i + 1; j < MAXAGENTS; j++)
+                {
+                    ExecutionEngine.Assert(target != pendingTargets.Get(AgentKey(j)));
+                }
+            }
+
+            StorageMap targets = new(Storage.CurrentContext, PREFIXAGENTTARGET);
+            StorageMap weights = new(Storage.CurrentContext, PREFIXAGENTWEIGHT);
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                ByteString target = pendingTargets.Get(AgentKey(i));
+                ByteString weightBytes = pendingWeights.Get(AgentKey(i));
+                targets.Put(AgentKey(i), target);
+                weights.Put(AgentKey(i), weightBytes);
+                pendingTargets.Delete(AgentKey(i));
+                pendingWeights.Delete(AgentKey(i));
+            }
+
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGACTIVE });
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXCONFIGREADY }, 1);
+        }
+
         public static void SetOwner(UInt160 owner)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
@@ -154,23 +218,6 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             new StorageMap(Storage.CurrentContext, PREFIXAGENT).Put((ByteString)i, agent);
         }
-        public static void SetStrategist(UInt160 strategist)
-        {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, strategist);
-        }
-        public static void AllowCandidate(ECPoint target)
-        {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-            StorageMap candidates = new StorageMap(Storage.CurrentContext, PREFIXCANDIDATEWHITELIST);
-            candidates.Put(target, 1);
-        }
-        public static void DisallowCandidate(ECPoint target)
-        {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-            StorageMap candidates = new StorageMap(Storage.CurrentContext, PREFIXCANDIDATEWHITELIST);
-            candidates.Delete(target);
-        }
         public static void Update(ByteString nefFile, string manifest)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
@@ -180,6 +227,22 @@ namespace TrustAnchor
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, Owner(), amount));
+        }
+
+        private static bool IsPendingConfigActive()
+        {
+            return Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGACTIVE }) is not null;
+        }
+
+        private static ByteString AgentKey(int index)
+        {
+            return (ByteString)(BigInteger)index;
+        }
+
+        private static BigInteger GetWeight(StorageMap map, BigInteger index)
+        {
+            ByteString value = map.Get((ByteString)index);
+            return value is null ? 0 : (BigInteger)value;
         }
     }
 }
