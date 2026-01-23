@@ -70,12 +70,16 @@ namespace TrustAnchor
 
             if (Runtime.CallingScriptHash == NEO.Hash && amount > 0)
             {
+                AssertConfigReady();
                 BigInteger stakeAmount = amount * 100000000;
                 StorageMap stakeMap = new(Storage.CurrentContext, PREFIXSTAKE);
                 BigInteger stake = (BigInteger)stakeMap.Get(from);
                 stakeMap.Put(from, stake + stakeAmount);
                 Storage.Put(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE }, TotalStake() + stakeAmount);
-                ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, Agent(0), NEO.BalanceOf(Runtime.ExecutingScriptHash)));
+                int targetIndex = SelectHighestWeightAgentIndex();
+                UInt160 targetAgent = Agent(targetIndex);
+                ExecutionEngine.Assert(targetAgent != UInt160.Zero);
+                ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, targetAgent, NEO.BalanceOf(Runtime.ExecutingScriptHash)));
             }
         }
 
@@ -111,6 +115,7 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(account));
             ExecutionEngine.Assert(neoAmount > 0);
             SyncAccount(account);
+            AssertConfigReady();
 
             BigInteger stakeAmount = neoAmount * 100000000;
             StorageMap stakeMap = new(Storage.CurrentContext, PREFIXSTAKE);
@@ -120,24 +125,24 @@ namespace TrustAnchor
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE }, TotalStake() - stakeAmount);
 
             BigInteger remaining = neoAmount;
-            for (BigInteger i = 0; remaining > 0; i++)
+            bool[] used = new bool[MAXAGENTS];
+            for (int step = 0; step < MAXAGENTS && remaining > 0; step++)
             {
-                UInt160 agent = Agent(i);
+                int selected = SelectLowestWeightAgentIndex(used);
+                if (selected < 0) break;
+                used[selected] = true;
+                UInt160 agent = Agent(selected);
                 ExecutionEngine.Assert(agent != UInt160.Zero);
                 BigInteger balance = NEO.BalanceOf(agent);
                 if (balance <= 0) continue;
-                if (remaining > balance)
+                BigInteger transferAmount = remaining > balance ? balance : remaining;
+                if (transferAmount > 0)
                 {
-                    remaining -= balance;
-                    if (balance > 0)
-                        Contract.Call(agent, "transfer", CallFlags.All, new object[] { account, balance });
-                }
-                else
-                {
-                    Contract.Call(agent, "transfer", CallFlags.All, new object[] { account, remaining });
-                    break;
+                    Contract.Call(agent, "transfer", CallFlags.All, new object[] { account, transferAmount });
+                    remaining -= transferAmount;
                 }
             }
+            ExecutionEngine.Assert(remaining == 0);
         }
 
         public static void BeginConfig()
@@ -234,6 +239,11 @@ namespace TrustAnchor
             return Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGACTIVE }) is not null;
         }
 
+        private static void AssertConfigReady()
+        {
+            ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, new byte[] { PREFIXCONFIGREADY }) is not null);
+        }
+
         private static ByteString AgentKey(int index)
         {
             return (ByteString)(BigInteger)index;
@@ -243,6 +253,42 @@ namespace TrustAnchor
         {
             ByteString value = map.Get((ByteString)index);
             return value is null ? 0 : (BigInteger)value;
+        }
+
+        private static int SelectHighestWeightAgentIndex()
+        {
+            BigInteger bestWeight = -1;
+            int bestIndex = -1;
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                BigInteger weight = AgentWeight(i);
+                if (weight <= 0) continue;
+                if (weight > bestWeight || (weight == bestWeight && (bestIndex < 0 || i < bestIndex)))
+                {
+                    bestWeight = weight;
+                    bestIndex = i;
+                }
+            }
+            ExecutionEngine.Assert(bestIndex >= 0);
+            return bestIndex;
+        }
+
+        private static int SelectLowestWeightAgentIndex(bool[] used)
+        {
+            int selected = -1;
+            BigInteger selectedWeight = 0;
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                if (used[i]) continue;
+                BigInteger weight = AgentWeight(i);
+                if (weight <= 0) continue;
+                if (selected < 0 || weight < selectedWeight || (weight == selectedWeight && i < selected))
+                {
+                    selected = i;
+                    selectedWeight = weight;
+                }
+            }
+            return selected;
         }
     }
 }
