@@ -92,4 +92,15 @@ public class TrustAnchorTests
 
         AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 3));
     }
+
+    [Fact]
+    public void Withdraw_zero_amount_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
+
+        AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 0));
+    }
 }
