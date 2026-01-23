@@ -103,4 +103,13 @@ public class TrustAnchorTests
 
         AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 0));
     }
+
+    [Fact]
+    public void TrigTransfer_requires_strategist()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+
+        AssertFault(() => fixture.CallFrom(fixture.StrangerHash, "trigTransfer", 0, 0, 1));
+    }
 }
