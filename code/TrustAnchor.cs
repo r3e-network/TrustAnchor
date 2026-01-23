@@ -213,6 +213,68 @@ namespace TrustAnchor
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXCONFIGREADY }, 1);
         }
 
+        public static void RebalanceVotes()
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            AssertConfigReady();
+
+            BigInteger total = 0;
+            BigInteger[] balances = new BigInteger[MAXAGENTS];
+            BigInteger[] weights = new BigInteger[MAXAGENTS];
+            UInt160[] agents = new UInt160[MAXAGENTS];
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                UInt160 agent = Agent(i);
+                ExecutionEngine.Assert(agent != UInt160.Zero);
+                agents[i] = agent;
+                BigInteger balance = NEO.BalanceOf(agent);
+                balances[i] = balance;
+                BigInteger weight = AgentWeight(i);
+                weights[i] = weight;
+                total += balance;
+            }
+
+            BigInteger[] targets = new BigInteger[MAXAGENTS];
+            BigInteger allocated = 0;
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                targets[i] = total * weights[i] / TOTALWEIGHT;
+                allocated += targets[i];
+            }
+
+            BigInteger remainder = total - allocated;
+            if (remainder > 0)
+            {
+                int highest = SelectHighestWeightAgentIndex();
+                targets[highest] += remainder;
+            }
+
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                BigInteger need = targets[i] - balances[i];
+                if (need <= 0) continue;
+                for (int j = 0; j < MAXAGENTS && need > 0; j++)
+                {
+                    BigInteger excess = balances[j] - targets[j];
+                    if (excess <= 0) continue;
+                    BigInteger amount = need > excess ? excess : need;
+                    if (amount > 0)
+                    {
+                        Contract.Call(agents[j], "transfer", CallFlags.All, new object[] { agents[i], amount });
+                        balances[j] -= amount;
+                        balances[i] += amount;
+                        need -= amount;
+                    }
+                }
+                ExecutionEngine.Assert(need == 0);
+            }
+
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                Contract.Call(agents[i], "vote", CallFlags.All, new object[] { AgentTarget(i) });
+            }
+        }
+
         public static void SetOwner(UInt160 owner)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
