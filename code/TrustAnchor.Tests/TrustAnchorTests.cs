@@ -24,4 +24,22 @@ public class TrustAnchorTests
         Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
         Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("totalStake"));
     }
+
+    [Fact]
+    public void Gas_reward_accrues_and_can_be_claimed()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.OwnerHash);
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
+
+        fixture.MintGas(fixture.OtherHash, 10);
+        fixture.GasTransfer(fixture.OtherHash, fixture.TrustHash, 5);
+
+        var before = fixture.GasBalance(fixture.UserHash);
+        fixture.CallFrom(fixture.UserHash, "claimReward", fixture.UserHash);
+        var after = fixture.GasBalance(fixture.UserHash);
+
+        Assert.True(after > before);
+    }
 }
