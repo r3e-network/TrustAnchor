@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace bNEO with a TrustAnchor core contract that tracks NEO deposits internally, keeps NeoBurger reward accounting, and switches TEE voting to a weight-config file with sum=21.
+**Goal:** Replace the legacy deposit token with a TrustAnchor core contract that tracks NEO deposits internally, keeps the existing reward accounting, and switches TEE voting to a weight-config file with sum=21.
 
-**Architecture:** Add a new on-chain `TrustAnchor` contract that mirrors NeoBurger’s owner/strategist/agent flow but replaces NEP-17 balances with a stake ledger. Update the TEE strategist to read a weight config file, compute target voting power from agent holdings, and submit `trigVote`/`trigTransfer` calls; other TEE tools keep their roles but target TrustAnchor.
+**Architecture:** Add a new on-chain `TrustAnchor` contract that mirrors the legacy owner/strategist/agent flow but replaces NEP-17 balances with a stake ledger. Update the TEE strategist to read a weight config file, compute target voting power from agent holdings, and submit `trigVote`/`trigTransfer` calls; other TEE tools keep their roles but target TrustAnchor.
 
 **Tech Stack:** C# (.NET 7), Neo SmartContract Framework, System.Text.Json, xUnit for TEE unit tests.
 
@@ -13,9 +13,9 @@
 ### Task 1: Add vote config parsing + validation (TEE)
 
 **Files:**
-- Create: `TEE/BurgerStrategist/VoteConfig.cs`
-- Create: `TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
-- Create: `TEE/BurgerStrategist.Tests/VoteConfigTests.cs`
+- Create: `TEE/TrustAnchorStrategist/VoteConfig.cs`
+- Create: `TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
+- Create: `TEE/TrustAnchorStrategist.Tests/VoteConfigTests.cs`
 - Modify: `TEE/TEE.sln`
 
 **Step 1: Write the failing test**
@@ -69,7 +69,7 @@ public class VoteConfigTests
 
 **Step 2: Run test to verify it fails**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: FAIL with “VoteConfig does not exist” or missing references.
 
 **Step 3: Write minimal implementation**
@@ -112,13 +112,13 @@ internal sealed record VoteConfig(IReadOnlyList<VoteCandidate> Candidates)
 
 **Step 4: Run test to verify it passes**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: PASS.
 
 **Step 5: Commit**
 
 ```bash
-git add TEE/BurgerStrategist/VoteConfig.cs TEE/BurgerStrategist.Tests TEE/TEE.sln
+git add TEE/TrustAnchorStrategist/VoteConfig.cs TEE/TrustAnchorStrategist.Tests TEE/TEE.sln
 git commit -m "test: add vote config parsing and validation"
 ```
 
@@ -127,8 +127,8 @@ git commit -m "test: add vote config parsing and validation"
 ### Task 2: Add weight-based target allocator (TEE)
 
 **Files:**
-- Create: `TEE/BurgerStrategist/VoteAllocator.cs`
-- Create: `TEE/BurgerStrategist.Tests/VoteAllocatorTests.cs`
+- Create: `TEE/TrustAnchorStrategist/VoteAllocator.cs`
+- Create: `TEE/TrustAnchorStrategist.Tests/VoteAllocatorTests.cs`
 
 **Step 1: Write the failing test**
 
@@ -160,7 +160,7 @@ public class VoteAllocatorTests
 
 **Step 2: Run test to verify it fails**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: FAIL with “VoteAllocator does not exist.”
 
 **Step 3: Write minimal implementation**
@@ -194,24 +194,24 @@ internal static class VoteAllocator
 
 **Step 4: Run test to verify it passes**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: PASS.
 
 **Step 5: Commit**
 
 ```bash
-git add TEE/BurgerStrategist/VoteAllocator.cs TEE/BurgerStrategist.Tests/VoteAllocatorTests.cs
+git add TEE/TrustAnchorStrategist/VoteAllocator.cs TEE/TrustAnchorStrategist.Tests/VoteAllocatorTests.cs
 git commit -m "test: add weight-based vote allocator"
 ```
 
 ---
 
-### Task 3: Add planner + wire BurgerStrategist to config
+### Task 3: Add planner + wire TrustAnchorStrategist to config
 
 **Files:**
-- Create: `TEE/BurgerStrategist/VotePlanner.cs`
-- Create: `TEE/BurgerStrategist.Tests/VotePlannerTests.cs`
-- Modify: `TEE/BurgerStrategist/Program.cs`
+- Create: `TEE/TrustAnchorStrategist/VotePlanner.cs`
+- Create: `TEE/TrustAnchorStrategist.Tests/VotePlannerTests.cs`
+- Modify: `TEE/TrustAnchorStrategist/Program.cs`
 
 **Step 1: Write the failing test**
 
@@ -233,14 +233,14 @@ public class VotePlannerTests
 
 **Step 2: Run test to verify it fails**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: FAIL because `VotePlanner` does not exist.
 
 **Step 3: Implement the wiring**
 
 Add `VotePlanner.AssignTargets(int agentCount, IReadOnlyList<BigInteger> targets)`:
 - Require `agentCount == targets.Count`.\n- Return a target-holdings list with one target per agent (1:1 mapping).
-\nUpdate `TEE/BurgerStrategist/Program.cs` to:
+\nUpdate `TEE/TrustAnchorStrategist/Program.cs` to:
 - Read `TRUSTANCHOR` and `VOTE_CONFIG` env vars.
 - Load `VoteConfig` and validate sum=21.
 - Fetch agents from TrustAnchor (`agent(i)` loop, stop on null).
@@ -254,13 +254,13 @@ Add `VotePlanner.AssignTargets(int agentCount, IReadOnlyList<BigInteger> targets
 
 **Step 4: Run test to verify it passes**
 
-Run: `dotnet test TEE/BurgerStrategist.Tests/BurgerStrategist.Tests.csproj`
+Run: `dotnet test TEE/TrustAnchorStrategist.Tests/TrustAnchorStrategist.Tests.csproj`
 Expected: PASS.
 
 **Step 5: Commit**
 
 ```bash
-git add TEE/BurgerStrategist/Program.cs
+git add TEE/TrustAnchorStrategist/Program.cs
 git commit -m "feat: drive strategist votes from config weights"
 ```
 
@@ -325,10 +325,10 @@ git commit -m "feat: add TrustAnchor core contract"
 ### Task 5: Update other TEE tools to target TrustAnchor
 
 **Files:**
-- Modify: `TEE/BurgerClaimer/Program.cs`
-- Modify: `TEE/BurgerRepresentative/Program.cs`
-- Modify: `TEE/BurgerTransfer/Program.cs`
-- Modify: `TEE/BurgerVote/Program.cs`
+- Modify: `TEE/TrustAnchorClaimer/Program.cs`
+- Modify: `TEE/TrustAnchorRepresentative/Program.cs`
+- Modify: `TEE/TrustAnchorTransfer/Program.cs`
+- Modify: `TEE/TrustAnchorVote/Program.cs`
 
 **Step 1: Write the failing test**
 
@@ -347,7 +347,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add TEE/BurgerClaimer/Program.cs TEE/BurgerRepresentative/Program.cs TEE/BurgerTransfer/Program.cs TEE/BurgerVote/Program.cs
+git add TEE/TrustAnchorClaimer/Program.cs TEE/TrustAnchorRepresentative/Program.cs TEE/TrustAnchorTransfer/Program.cs TEE/TrustAnchorVote/Program.cs
 git commit -m "feat: point TEE tools at TrustAnchor"
 ```
 
@@ -356,7 +356,7 @@ git commit -m "feat: point TEE tools at TrustAnchor"
 ### Task 6: Add config example + docs
 
 **Files:**
-- Create: `TEE/BurgerStrategist/vote-config.example.json`
+- Create: `TEE/TrustAnchorStrategist/vote-config.example.json`
 - Modify: `TEE/README.md`
 
 **Step 1: Write the failing test**
@@ -367,13 +367,13 @@ No automated tests; this is documentation-only.
 
 Document:
 - `TRUSTANCHOR` env var for all tools.
-- `VOTE_CONFIG` path for `BurgerStrategist`.
+- `VOTE_CONFIG` path for `TrustAnchorStrategist`.
 - Config schema and sum=21 rule.
 - Suggested workflow: update config via GitHub and restart TEE.
 
 **Step 3: Commit**
 
 ```bash
-git add TEE/BurgerStrategist/vote-config.example.json TEE/README.md
+git add TEE/TrustAnchorStrategist/vote-config.example.json TEE/README.md
 git commit -m "docs: add TrustAnchor strategist config"
 ```

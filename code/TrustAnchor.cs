@@ -7,9 +7,9 @@ using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using ContractParameterType = Neo.SmartContract.Framework.ContractParameterType;
 
-namespace NeoBurger
+namespace TrustAnchor
 {
-    [ManifestExtra("Author", "NEOBURGER")]
+    [ManifestExtra("Author", "TrustAnchor")]
     [ManifestExtra("Email", "developer@neo.org")]
     [ManifestExtra("Description", "TrustAnchor Core Contract")]
     [ContractPermission("*", "*")]
@@ -41,6 +41,7 @@ namespace NeoBurger
 
         public static void _deploy(object data, bool update)
         {
+            if (update) return;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, DEFAULT_OWNER);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXSTRATEGIST }, DEFAULT_OWNER);
         }
@@ -116,8 +117,8 @@ namespace NeoBurger
             {
                 UInt160 agent = Agent(i);
                 ExecutionEngine.Assert(agent != UInt160.Zero);
-                BigInteger balance = NEO.BalanceOf(agent) - 1;
-                if (balance < 0) balance = 0;
+                BigInteger balance = NEO.BalanceOf(agent);
+                if (balance <= 0) continue;
                 if (remaining > balance)
                 {
                     remaining -= balance;

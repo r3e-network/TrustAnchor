@@ -3,7 +3,7 @@ TrustAnchor smart contracts
 
 ## notice
 
-TrustAnchor is derived from NeoBurger, originally created in the early days of NEO3.
+TrustAnchor is derived from a legacy NEO3-era contract design.
 
 The compiler and toolkits at that time were not developed well and were not compatible with the latest version.
 
