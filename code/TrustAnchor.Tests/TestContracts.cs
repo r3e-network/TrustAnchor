@@ -3,14 +3,17 @@ using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Numerics;
 using System.Runtime.Loader;
 using Neo;
 using Neo.Cryptography.ECC;
+using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.SmartContract.Manifest;
 using Neo.Extensions;
 using Neo.SmartContract.Testing;
 using Neo.SmartContract.Testing.Extensions;
+using Neo.SmartContract.Testing.Native;
 using Neo.VM;
 using Neo.VM.Types;
 using Neo.Wallets;
@@ -35,18 +38,30 @@ public sealed class TrustAnchorFixture
     private static bool _resolverInitialized;
 
     private readonly TestEngine _engine;
+    private readonly Signer _ownerSigner;
+    private readonly Signer _userSigner;
+    private readonly Signer _committeeSigner;
+    private readonly Signer _validatorsSigner;
 
     public UInt160 OwnerHash { get; }
     public ECPoint OwnerPubKey { get; }
     public UInt160 TrustHash { get; }
+    public UInt160 UserHash { get; }
 
     public TrustAnchorFixture()
     {
         _engine = new TestEngine();
 
         var ownerKey = new KeyPair(Enumerable.Repeat((byte)0x01, 32).ToArray());
+        var userKey = new KeyPair(Enumerable.Repeat((byte)0x02, 32).ToArray());
         OwnerPubKey = ownerKey.PublicKey;
         OwnerHash = ownerKey.PublicKeyHash;
+        UserHash = userKey.PublicKeyHash;
+
+        _ownerSigner = new Signer { Account = OwnerHash, Scopes = WitnessScope.CalledByEntry };
+        _userSigner = new Signer { Account = UserHash, Scopes = WitnessScope.CalledByEntry };
+        _committeeSigner = new Signer { Account = _engine.CommitteeAddress, Scopes = WitnessScope.CalledByEntry };
+        _validatorsSigner = new Signer { Account = _engine.ValidatorsAddress, Scopes = WitnessScope.CalledByEntry };
 
         var trustSource = PatchTrustAnchorSource(OwnerHash);
         var (nef, manifest) = CompileSource(trustSource);
@@ -58,6 +73,37 @@ public sealed class TrustAnchorFixture
     {
         var result = Invoke(TrustHash, operation, args);
         return (T)TestExtensions.ConvertTo(result, typeof(T));
+    }
+
+    public void SetAgent(int index, UInt160 agent)
+    {
+        _engine.SetTransactionSigners(new[] { _ownerSigner });
+        Invoke(TrustHash, "setAgent", new BigInteger(index), agent);
+    }
+
+    public void MintNeo(UInt160 to, int amount)
+    {
+        var funding = SelectNeoFundingAccount();
+        var signer = funding == _engine.CommitteeAddress ? _committeeSigner : _validatorsSigner;
+        _engine.SetTransactionSigners(new[] { signer });
+        var result = _engine.Native.NEO.Transfer(funding, to, amount, null);
+        if (result != true) throw new InvalidOperationException("NEO mint failed");
+    }
+
+    public void NeoTransfer(UInt160 from, UInt160 to, int amount)
+    {
+        _engine.SetTransactionSigners(new[] { from == UserHash ? _userSigner : new Signer { Account = from, Scopes = WitnessScope.CalledByEntry } });
+        var result = _engine.Native.NEO.Transfer(from, to, amount, null);
+        if (result != true) throw new InvalidOperationException("NEO transfer failed");
+    }
+
+    private UInt160 SelectNeoFundingAccount()
+    {
+        var committeeBalance = _engine.Native.NEO.BalanceOf(_engine.CommitteeAddress) ?? BigInteger.Zero;
+        var validatorsBalance = _engine.Native.NEO.BalanceOf(_engine.ValidatorsAddress) ?? BigInteger.Zero;
+        if (committeeBalance > BigInteger.Zero) return _engine.CommitteeAddress;
+        if (validatorsBalance > BigInteger.Zero) return _engine.ValidatorsAddress;
+        throw new InvalidOperationException("No funding account with NEO balance found");
     }
 
     private StackItem Invoke(UInt160 contract, string operation, params object[] args)
