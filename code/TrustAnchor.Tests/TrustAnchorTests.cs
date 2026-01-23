@@ -109,4 +109,42 @@ public class TrustAnchorTests
 
         AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 0));
     }
+
+    [Fact]
+    public void Deposit_routes_to_highest_weight_agent()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 5);
+        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 16);
+        fixture.SetRemainingAgentConfigs(2, weight: 0);
+        fixture.FinalizeConfig();
+
+        fixture.MintNeo(fixture.UserHash, 3);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
+
+        Assert.Equal(new BigInteger(2), fixture.NeoBalance(fixture.AgentHashes[1]));
+    }
+
+    [Fact]
+    public void Withdraw_starts_from_lowest_non_zero_weight_agent()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 20);
+        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 1);
+        fixture.SetRemainingAgentConfigs(2, weight: 0);
+        fixture.FinalizeConfig();
+
+        fixture.MintNeo(fixture.UserHash, 2);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
+        fixture.MintNeo(fixture.AgentHashes[1], 1);
+
+        fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 1);
+
+        Assert.Equal(fixture.UserHash, fixture.AgentLastTransferTo(1));
+        Assert.Equal(new BigInteger(1), fixture.AgentLastTransferAmount(1));
+    }
 }
