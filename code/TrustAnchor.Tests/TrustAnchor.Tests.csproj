@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="..\\TrustAnchor.cs" Link="TrustAnchor.cs" />
+    <Compile Include="..\\TrustAnchorAgent.cs" Link="TrustAnchorAgent.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,23 +1,21 @@
 using System;
 using System.ComponentModel;
 using System.Numerics;
-using Neo;
-using Neo.SmartContract;
 using Neo.SmartContract.Framework;
 using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 using Neo.SmartContract.Framework.Attributes;
 
 
-namespace NeoBurger
+namespace TrustAnchor
 {
-    [ManifestExtra("Author", "NEOBURGER")]
+    [ManifestExtra("Author", "TrustAnchor")]
     [ManifestExtra("Email", "developer@neo.org")]
-    [ManifestExtra("Description", "Agent Contract")]
+    [ManifestExtra("Description", "TrustAnchor Agent Contract")]
     [ContractPermission("*", "*")]
-    public class BurgerAgent : SmartContract
+    public class TrustAnchorAgent : SmartContract
     {
-        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
+        [InitialValue("[TODO]: ARGS", Neo.SmartContract.Framework.ContractParameterType.Hash160)]
         private static readonly UInt160 CORE = default;
 
         public static void Transfer(UInt160 to, BigInteger amount)
@@ -36,7 +34,7 @@ namespace NeoBurger
             ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, CORE, GAS.BalanceOf(Runtime.ExecutingScriptHash), true));
         }
 
-        public static void Vote(Neo.Cryptography.ECC.ECPoint target)
+        public static void Vote(ECPoint target)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(CORE));
             ExecutionEngine.Assert(NEO.Vote(Runtime.ExecutingScriptHash, target));

@@ -17,6 +17,8 @@ public class TrustAnchorTests
         var fixture = new TrustAnchorFixture();
         var owner = fixture.Call<UInt160>("owner");
         Assert.Equal(fixture.OwnerHash, owner);
+        Assert.NotNull(typeof(TrustAnchor));
+        Assert.NotNull(typeof(TrustAnchorAgent));
     }
 
     [Fact]
