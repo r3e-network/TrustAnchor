@@ -1,14 +1,14 @@
-# TrustAnchor Residual Naming Cleanup Implementation Plan
+# TrustAnchor Naming Cleanup Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Remove any remaining legacy product references from filenames and content, including planning docs.
+**Goal:** Remove any remaining product references from filenames and content, including planning docs.
 
-**Architecture:** Audit for residual names with `rg`, update the remaining plan doc text to legacy-neutral wording, then re-run the audit to confirm the repo is clean.
+**Architecture:** Audit for remaining names with `rg`, update the plan doc text to neutral wording, then re-run the audit to confirm the repo is clean.
 
 **Tech Stack:** bash, ripgrep.
 
-### Task 1: Clean remaining legacy references in planning docs
+### Task 1: Clean remaining references in planning docs
 
 **Files:**
 - Modify: `docs/plans/2026-01-23-trustanchor-rebrand.md`
@@ -16,7 +16,7 @@
 **Step 1: Write the failing test**
 
 ```bash
-rg -n "legacy product" docs/plans/2026-01-23-trustanchor-rebrand.md
+rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-rebrand.md
 ```
 
 **Step 2: Run test to verify it fails**
@@ -25,12 +25,12 @@ Expected: matches are present in the plan text.
 
 **Step 3: Write minimal implementation**
 
-Replace legacy product names in the plan with neutral wording such as "legacy" or "previous names," while keeping the plan meaning intact.
+Replace remaining product names in the plan with neutral wording while keeping the plan meaning intact.
 
 **Step 4: Run test to verify it passes**
 
 ```bash
-rg -n "legacy product" docs/plans/2026-01-23-trustanchor-rebrand.md
+rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-rebrand.md
 ```
 Expected: no matches.
 
@@ -38,7 +38,7 @@ Expected: no matches.
 
 ```bash
 git add docs/plans/2026-01-23-trustanchor-rebrand.md
-git commit -m "docs: remove legacy naming from rebrand plan"
+git commit -m "docs: remove remaining naming from rebrand plan"
 ```
 
 ### Task 2: Repo-wide verification sweep
@@ -49,7 +49,7 @@ git commit -m "docs: remove legacy naming from rebrand plan"
 **Step 1: Run audit**
 
 ```bash
-rg -n "legacy product" -S .
+rg -n "<naming-patterns>" -S .
 ```
 
 **Step 2: Validate**

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Rename all remaining legacy tooling and namespaces to TrustAnchor, update scripts/docs, and verify build + tests.
+**Goal:** Ensure all tooling and namespaces use TrustAnchor naming, update scripts/docs, and verify build + tests.
 
 **Architecture:** Keep current TrustAnchor contract and weight-based strategist logic intact while renaming TEE apps, tests, and namespaces. Update the neo-express script to build TrustAnchorAgent. Finish with build/test verification.
 
@@ -11,12 +11,12 @@
 ### Task 1: Rename TEE projects, folders, and namespaces
 
 **Files:**
-- Rename: `TEE/legacy strategist` → `TEE/TrustAnchorStrategist`
-- Rename: `TEE/legacy strategist tests` → `TEE/TrustAnchorStrategist.Tests`
-- Rename: `TEE/legacy claimer` → `TEE/TrustAnchorClaimer`
-- Rename: `TEE/legacy vote` → `TEE/TrustAnchorVote`
-- Rename: `TEE/legacy transfer` → `TEE/TrustAnchorTransfer`
-- Rename: `TEE/legacy representative` → `TEE/TrustAnchorRepresentative`
+- Ensure: `TEE/TrustAnchorStrategist`
+- Ensure: `TEE/TrustAnchorStrategist.Tests`
+- Ensure: `TEE/TrustAnchorClaimer`
+- Ensure: `TEE/TrustAnchorVote`
+- Ensure: `TEE/TrustAnchorTransfer`
+- Ensure: `TEE/TrustAnchorRepresentative`
 - Modify: `TEE/TEE.sln`
 - Modify: `TEE/TrustAnchorStrategist/*.cs`
 - Modify: `TEE/TrustAnchorStrategist.Tests/*.cs`
@@ -41,7 +41,7 @@ Expected: FAIL because paths/namespaces don’t exist yet.
 **Step 3: Write minimal implementation**
 
 - Rename directories and `.csproj` files.
-- Update namespaces from `legacy names` → `TrustAnchor*`.
+- Update namespaces to `TrustAnchor*`.
 - Update project references in `.csproj`.
 - Update `TEE/TEE.sln` project entries to new paths/names.
 
@@ -74,7 +74,7 @@ Expected: FAIL until the script references `TrustAnchorAgent`.
 
 **Step 3: Write minimal implementation**
 
-- Replace `legacy agent` build/deploy paths with `TrustAnchorAgent`.
+- Use `TrustAnchorAgent` build/deploy paths.
 - Update `--base-name` to `TrustAnchorAgent`.
 - Ensure it uses `code/TrustAnchorAgent.cs`.
 
@@ -95,7 +95,7 @@ git commit -m "chore: update neo-express script for TrustAnchorAgent"
 **Files:**
 - Modify: `TEE/README.md`
 - Modify: `code/TrustAnchor.cs` (manifest author/branding)
-- Modify: Any remaining `legacy names`/`legacy` references in TEE/tools/docs where rebrand is required
+- Modify: Any remaining non-TrustAnchor references in TEE/tools/docs where rebrand is required
 
 **Step 1: Write the failing test**
 
@@ -103,19 +103,19 @@ No automated test; use a grep sweep to find remaining references.
 
 **Step 2: Run sweep to verify it fails**
 
-Run: `rg -n "legacy" TEE code docs scripts`
-Expected: hits remain for namespaces and docs.
+Run: `rg -n "TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative|TrustAnchorAgent" TEE code docs scripts`
+Expected: hits remain for updated names.
 
 **Step 3: Write minimal implementation**
 
 - Update docs to TrustAnchor naming (e.g., `TrustAnchorStrategist` and config path).
 - Update manifest author/description strings in `code/TrustAnchor.cs`.
-- Replace remaining `legacy names` references that should be rebranded.
+- Replace remaining non-TrustAnchor references that should be rebranded.
 
 **Step 4: Run sweep to verify it passes**
 
-Run: `rg -n "legacy" TEE code docs scripts`
-Expected: no remaining hits except intentional historical references (if any).
+Run: `rg -n "TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative|TrustAnchorAgent" TEE code docs scripts`
+Expected: output only includes TrustAnchor names.
 
 **Step 5: Commit**
 

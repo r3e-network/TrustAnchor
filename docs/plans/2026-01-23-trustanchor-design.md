@@ -1,10 +1,10 @@
-# TrustAnchor design (legacy-derived, no deposit token)
+# TrustAnchor design (no deposit token)
 
 ## Context
-A legacy system uses a NEP-17 deposit token to represent deposits and distribute GAS rewards via an on-chain reward-per-share (RPS) mechanism. Voting decisions (who to vote for and how much) are computed off-chain in the TEE strategist tool and submitted as `trigVote`/`trigTransfer` calls. The goal is to remove the deposit token and the existing profit-based voting heuristic, while keeping the operational flow, reward distribution, and TEE-driven voting.
+TrustAnchor tracks NEO deposits internally and distributes GAS rewards via an on-chain reward-per-share (RPS) mechanism. Voting decisions (who to vote for and how much) are computed off-chain in the TEE strategist tool and submitted as `trigVote`/`trigTransfer` calls. The goal is to remove the deposit token and the existing profit-based voting heuristic, while keeping the operational flow, reward distribution, and TEE-driven voting.
 
 ## Goals
-- Replace the legacy deposit token with an internal deposit ledger tied to NEO deposits.
+- Use an internal deposit ledger tied to NEO deposits.
 - Keep GAS reward distribution using the same RPS/Reward/Paid mechanism.
 - Keep the agent/strategist/whitelist control flow on-chain.
 - Move voting decisions entirely off-chain via a config file with weights.
@@ -17,9 +17,9 @@ A legacy system uses a NEP-17 deposit token to represent deposits and distribute
 
 ## Architecture
 ### On-chain: TrustAnchor (new core contract)
-- Roles: `Owner`, `Strategist`, `Agent(i)` and candidate whitelist (same as the legacy system).
+- Roles: `Owner`, `Strategist`, `Agent(i)` and candidate whitelist.
 - Internal stake ledger: `Stake(account)` and `TotalStake` stored in contract storage.
-- GAS reward accounting: `RPS`, `Reward(account)`, `Paid(account)` using the same formula as the legacy system.
+- GAS reward accounting: `RPS`, `Reward(account)`, `Paid(account)` using the same formula as the current contract.
 - Voting controls:
   - `TrigVote(i, candidate)` only by strategist and only for whitelisted candidates.
   - `TrigTransfer(i, j, amount)` only by strategist.
@@ -34,7 +34,7 @@ A legacy system uses a NEP-17 deposit token to represent deposits and distribute
 ### Deposits
 - `OnNEP17Payment` handles NEO deposits only.
 - When NEO is sent to TrustAnchor:
-  - Credit `Stake(sender)` by `amount * 1e8` (same scaling as the legacy system).
+  - Credit `Stake(sender)` by `amount * 1e8` to preserve precision.
   - Increase `TotalStake` by the same amount.
   - Transfer the NEO to `Agent(0)` (existing flow).
 - On GAS transfers to TrustAnchor:
@@ -91,7 +91,7 @@ candidates:
 ## Testing
 ### On-chain
 - Deposit/withdraw consistency and stake accounting.
-- GAS reward distribution via RPS matching legacy behavior.
+- GAS reward distribution via RPS matching contract behavior.
 - Strategist-only enforcement for vote/transfer.
 
 ### Off-chain

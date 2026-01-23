@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace the legacy deposit token with a TrustAnchor core contract that tracks NEO deposits internally, keeps the existing reward accounting, and switches TEE voting to a weight-config file with sum=21.
+**Goal:** Use a TrustAnchor core contract that tracks NEO deposits internally, keeps the existing reward accounting, and switches TEE voting to a weight-config file with sum=21.
 
-**Architecture:** Add a new on-chain `TrustAnchor` contract that mirrors the legacy owner/strategist/agent flow but replaces NEP-17 balances with a stake ledger. Update the TEE strategist to read a weight config file, compute target voting power from agent holdings, and submit `trigVote`/`trigTransfer` calls; other TEE tools keep their roles but target TrustAnchor.
+**Architecture:** Add a new on-chain `TrustAnchor` contract that mirrors the owner/strategist/agent flow but replaces NEP-17 balances with a stake ledger. Update the TEE strategist to read a weight config file, compute target voting power from agent holdings, and submit `trigVote`/`trigTransfer` calls; other TEE tools keep their roles but target TrustAnchor.
 
 **Tech Stack:** C# (.NET 7), Neo SmartContract Framework, System.Text.Json, xUnit for TEE unit tests.
 
