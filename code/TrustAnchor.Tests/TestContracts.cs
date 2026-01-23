@@ -223,7 +223,9 @@ public sealed class TrustAnchorFixture
 
     public ECPoint AgentCandidate(int index)
     {
-        return ECCurve.Secp256r1.G * new byte[] { (byte)(index + 1) };
+        var keyBytes = new byte[32];
+        keyBytes[^1] = (byte)(index + 1);
+        return new KeyPair(keyBytes).PublicKey;
     }
 
     private UInt160 SelectNeoFundingAccount()
