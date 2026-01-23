@@ -16,7 +16,7 @@
 **Step 1: Write the failing test**
 
 ```bash
-rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-rebrand.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" docs/plans/2026-01-23-trustanchor-rebrand.md
 ```
 
 **Step 2: Run test to verify it fails**
@@ -30,7 +30,7 @@ Replace remaining product names in the plan with neutral wording while keeping t
 **Step 4: Run test to verify it passes**
 
 ```bash
-rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-rebrand.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" docs/plans/2026-01-23-trustanchor-rebrand.md
 ```
 Expected: no matches.
 
@@ -49,7 +49,7 @@ git commit -m "docs: remove remaining naming from rebrand plan"
 **Step 1: Run audit**
 
 ```bash
-rg -n "<naming-patterns>" -S .
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" -S .
 ```
 
 **Step 2: Validate**

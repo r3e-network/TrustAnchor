@@ -17,7 +17,7 @@
 **Step 1: Write the failing test**
 
 ```bash
-rg -n "<naming-patterns>" code/README.md TEE/README.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" code/README.md TEE/README.md
 ```
 
 **Step 2: Run test to verify it fails**
@@ -31,7 +31,7 @@ Expected: matches are present.
 **Step 4: Run test to verify it passes**
 
 ```bash
-rg -n "<naming-patterns>" code/README.md TEE/README.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" code/README.md TEE/README.md
 ```
 Expected: no matches.
 
@@ -53,7 +53,7 @@ git commit -m "docs: remove non-TrustAnchor wording from readmes"
 **Step 1: Write the failing test**
 
 ```bash
-rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-*.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" docs/plans/2026-01-23-trustanchor-*.md
 ```
 
 **Step 2: Run test to verify it fails**
@@ -67,7 +67,7 @@ Expected: matches are present.
 **Step 4: Run test to verify it passes**
 
 ```bash
-rg -n "<naming-patterns>" docs/plans/2026-01-23-trustanchor-*.md
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" docs/plans/2026-01-23-trustanchor-*.md
 ```
 Expected: no matches.
 
@@ -89,7 +89,7 @@ git commit -m "docs: remove non-TrustAnchor wording from plans"
 **Step 1: Run audit**
 
 ```bash
-rg -n "<naming-patterns>" -S .
+rg -n "TrustAnchorAgent|TrustAnchorStrategist|TrustAnchorClaimer|TrustAnchorVote|TrustAnchorTransfer|TrustAnchorRepresentative" -S .
 ```
 
 **Step 2: Validate**
