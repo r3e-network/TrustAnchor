@@ -147,4 +147,26 @@ public class TrustAnchorTests
         Assert.Equal(fixture.UserHash, fixture.AgentLastTransferTo(1));
         Assert.Equal(new BigInteger(1), fixture.AgentLastTransferAmount(1));
     }
+
+    [Fact]
+    public void Rebalance_moves_neo_and_votes_per_weights()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 10);
+        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 11);
+        fixture.SetRemainingAgentConfigs(2, weight: 0);
+        fixture.FinalizeConfig();
+
+        fixture.MintNeo(fixture.UserHash, 6);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 6);
+
+        fixture.RebalanceVotes();
+
+        Assert.Equal(fixture.AgentCandidate(0), fixture.AgentLastVote(0));
+        Assert.Equal(fixture.AgentCandidate(1), fixture.AgentLastVote(1));
+        Assert.Equal(new BigInteger(2), fixture.NeoBalance(fixture.AgentHashes[0]));
+        Assert.Equal(new BigInteger(4), fixture.NeoBalance(fixture.AgentHashes[1]));
+    }
 }
