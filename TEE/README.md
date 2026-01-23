@@ -7,7 +7,7 @@ The TEE tools now target the TrustAnchor core contract by default.
 
 Environment variables:
 
-- `TRUSTANCHOR`: TrustAnchor script hash (defaults to a legacy placeholder hash for compatibility).
+- `TRUSTANCHOR`: TrustAnchor script hash (defaults to a placeholder hash for compatibility).
 - `VOTE_CONFIG`: Path to the vote config JSON used by `TrustAnchorStrategist`.
 
 Vote config rules:
