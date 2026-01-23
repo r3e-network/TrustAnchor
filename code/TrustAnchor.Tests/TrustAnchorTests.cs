@@ -6,6 +6,11 @@ namespace TrustAnchor.Tests;
 
 public class TrustAnchorTests
 {
+    private static void AssertFault(Action action)
+    {
+        Assert.ThrowsAny<Neo.SmartContract.Testing.Exceptions.TestException>(action);
+    }
+
     [Fact]
     public void Deploys_contract_and_returns_owner()
     {
@@ -68,12 +73,23 @@ public class TrustAnchorTests
         fixture.SetAgent(0, fixture.AgentHash);
         var candidate = fixture.OwnerPubKey;
 
-        Assert.ThrowsAny<Exception>(() => fixture.CallFrom(fixture.StrangerHash, "trigVote", 0, candidate));
+        AssertFault(() => fixture.CallFrom(fixture.StrangerHash, "trigVote", 0, candidate));
 
         fixture.AllowCandidate(candidate);
         fixture.SetStrategist(fixture.StrategistHash);
         fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, candidate);
 
         Assert.Equal(candidate, fixture.AgentLastVote());
+    }
+
+    [Fact]
+    public void Withdraw_over_balance_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
+
+        AssertFault(() => fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 3));
     }
 }
