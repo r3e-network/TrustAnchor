@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BurgerStrategist\BurgerStrategist.csproj" />
+    <ProjectReference Include="..\TrustAnchorStrategist\TrustAnchorStrategist.csproj" />
   </ItemGroup>
 
 </Project>

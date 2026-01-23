@@ -10,7 +10,7 @@ using Neo.Cryptography.ECC;
 using Neo.SmartContract.Native;
 using Neo.VM;
 
-namespace BurgerStrategist
+namespace TrustAnchorStrategist
 {
     class Program
     {
@@ -55,16 +55,31 @@ namespace BurgerStrategist
                     throw new Exception($"Candidate not whitelisted: {candidate}");
             }
 
-            List<Neo.VM.Types.Struct> agentStates = agents
+            List<Neo.VM.Types.StackItem> agentStates = agents
                 .Select(v => NativeContract.NEO.Hash.MakeScript("getAccountState", v))
                 .SelectMany(a => a)
                 .ToArray()
                 .Call()
-                .Select(v => v.ToVMStruct())
                 .ToList();
 
-            List<byte[]> agentTo = agentStates.Select(v => v[2].ToBytes()).ToList();
-            List<BigInteger> agentHold = agentStates.Select(v => v.First().GetInteger()).ToList();
+            if (agentStates.Count != agents.Count)
+                throw new Exception("Agent state count mismatch");
+
+            List<byte[]> agentTo = new();
+            List<BigInteger> agentHold = new();
+            foreach (var item in agentStates)
+            {
+                if (item.IsNull)
+                {
+                    agentTo.Add(Array.Empty<byte>());
+                    agentHold.Add(BigInteger.Zero);
+                    continue;
+                }
+
+                var state = item.ToVMStruct();
+                agentTo.Add(state[2].ToBytes());
+                agentHold.Add(state.First().GetInteger());
+            }
 
             BigInteger totalPower = agentHold.Sum();
             List<int> weights = config.Candidates.Select(c => c.Weight).ToList();

@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using Xunit;
 
-namespace BurgerStrategist.Tests;
+namespace TrustAnchorStrategist.Tests;
 
 public class VoteConfigTests
 {

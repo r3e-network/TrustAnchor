@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace BurgerStrategist;
+namespace TrustAnchorStrategist;
 
 public static class VotePlanner
 {

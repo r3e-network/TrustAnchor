@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace BurgerStrategist;
+namespace TrustAnchorStrategist;
 
 public sealed record VoteCandidate(string PubKey, int Weight);
 

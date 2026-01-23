@@ -9,7 +9,7 @@ using LibHelper;
 using LibRPC;
 using LibWallet;
 
-namespace BurgerRepresentative
+namespace TrustAnchorRepresentative
 {
     class Program
     {

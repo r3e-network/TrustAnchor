@@ -9,7 +9,7 @@ using LibHelper;
 using LibRPC;
 using LibWallet;
 
-namespace BurgerClaimer
+namespace TrustAnchorClaimer
 {
     class Program
     {

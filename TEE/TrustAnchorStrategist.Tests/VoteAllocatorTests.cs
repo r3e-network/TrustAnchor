@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
 
-namespace BurgerStrategist.Tests;
+namespace TrustAnchorStrategist.Tests;
 
 public class VoteAllocatorTests
 {
