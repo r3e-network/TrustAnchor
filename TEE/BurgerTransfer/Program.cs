@@ -14,15 +14,17 @@ namespace BurgerTransfer
 {
     class Program
     {
+        private const string DefaultTrustAnchor = "0x48c40d4666f93408be1bef038b6722404d9a4c2a";
         private static readonly BigInteger FROM = BigInteger.Parse(Environment.GetEnvironmentVariable("FROM"));
         private static readonly BigInteger TO = BigInteger.Parse(Environment.GetEnvironmentVariable("TO"));
         private static readonly BigInteger AMOUNT = BigInteger.Parse(Environment.GetEnvironmentVariable("AMOUNT"));
 
         static void Main(string[] args)
         {
-            UInt160 BNEO = UInt160.Parse("0x48c40d4666f93408be1bef038b6722404d9a4c2a");
+            var trustAnchorHash = Environment.GetEnvironmentVariable("TRUSTANCHOR") ?? DefaultTrustAnchor;
+            UInt160 trustAnchor = UInt160.Parse(trustAnchorHash);
             $"TRANSFER: {FROM} -> {TO}, AMOUNT = {AMOUNT}".Log();
-            Byte[] SCRIPT = BNEO.MakeScript("trigTransfer", FROM, TO, AMOUNT).ToArray();
+            Byte[] SCRIPT = trustAnchor.MakeScript("trigTransfer", FROM, TO, AMOUNT).ToArray();
             SCRIPT.ToHexString().Out();
             SCRIPT.ToArray().SendTx().Out();;
         }
