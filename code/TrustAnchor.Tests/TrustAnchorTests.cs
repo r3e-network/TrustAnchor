@@ -42,4 +42,22 @@ public class TrustAnchorTests
 
         Assert.True(after > before);
     }
+
+    [Fact]
+    public void Withdraw_reduces_stake_and_transfers_neo_from_agent()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 3);
+
+        var before = fixture.NeoBalance(fixture.UserHash);
+        fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 1);
+        var after = fixture.NeoBalance(fixture.UserHash);
+
+        Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
+        Assert.True(after > before);
+        Assert.Equal(fixture.UserHash, fixture.AgentLastTransferTo());
+        Assert.Equal(new BigInteger(1), fixture.AgentLastTransferAmount());
+    }
 }

@@ -49,6 +49,7 @@ public sealed class TrustAnchorFixture
     public UInt160 TrustHash { get; }
     public UInt160 UserHash { get; }
     public UInt160 OtherHash { get; }
+    public UInt160 AgentHash { get; }
 
     public TrustAnchorFixture()
     {
@@ -72,12 +73,16 @@ public sealed class TrustAnchorFixture
         var (nef, manifest) = CompileSource(trustSource);
         var contract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(nef, manifest, null, null);
         TrustHash = contract.Hash;
+
+        var agentSource = TestAgentSource();
+        var (agentNef, agentManifest) = CompileSource(agentSource);
+        var agentContract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(agentNef, agentManifest, null, null);
+        AgentHash = agentContract.Hash;
     }
 
     public T Call<T>(string operation, params object[] args)
     {
-        var result = Invoke(TrustHash, operation, args);
-        return (T)TestExtensions.ConvertTo(result, typeof(T));
+        return CallContract<T>(TrustHash, operation, args);
     }
 
     public void CallFrom(UInt160 signer, string operation, params object[] args)
@@ -89,8 +94,7 @@ public sealed class TrustAnchorFixture
     public T CallFrom<T>(UInt160 signer, string operation, params object[] args)
     {
         _engine.SetTransactionSigners(new[] { ResolveSigner(signer) });
-        var result = Invoke(TrustHash, operation, args);
-        return (T)TestExtensions.ConvertTo(result, typeof(T));
+        return CallContract<T>(TrustHash, operation, args);
     }
 
     public void SetAgent(int index, UInt160 agent)
@@ -136,6 +140,26 @@ public sealed class TrustAnchorFixture
         return _engine.Native.GAS.BalanceOf(account) ?? BigInteger.Zero;
     }
 
+    public BigInteger NeoBalance(UInt160 account)
+    {
+        return _engine.Native.NEO.BalanceOf(account) ?? BigInteger.Zero;
+    }
+
+    public UInt160 AgentLastTransferTo()
+    {
+        return CallContract<UInt160>(AgentHash, "lastTransferTo");
+    }
+
+    public BigInteger AgentLastTransferAmount()
+    {
+        return CallContract<BigInteger>(AgentHash, "lastTransferAmount");
+    }
+
+    public ECPoint AgentLastVote()
+    {
+        return CallContract<ECPoint>(AgentHash, "lastVote");
+    }
+
     private UInt160 SelectNeoFundingAccount()
     {
         var committeeBalance = _engine.Native.NEO.BalanceOf(_engine.CommitteeAddress) ?? BigInteger.Zero;
@@ -162,6 +186,64 @@ public sealed class TrustAnchorFixture
         if (account == _engine.CommitteeAddress) return _committeeSigner;
         if (account == _engine.ValidatorsAddress) return _validatorsSigner;
         return new Signer { Account = account, Scopes = WitnessScope.CalledByEntry };
+    }
+
+    private T CallContract<T>(UInt160 contract, string operation, params object[] args)
+    {
+        var result = Invoke(contract, operation, args);
+        return (T)TestExtensions.ConvertTo(result, typeof(T));
+    }
+
+    private static string TestAgentSource()
+    {
+        return @"
+using System.Numerics;
+using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Native;
+using Neo.SmartContract.Framework.Services;
+
+public class TestAgent : SmartContract
+{
+    private const byte PrefixTransferTo = 0x01;
+    private const byte PrefixTransferAmount = 0x02;
+    private const byte PrefixVote = 0x03;
+
+    public static void Transfer(UInt160 to, BigInteger amount)
+    {
+        Storage.Put(Storage.CurrentContext, new byte[] { PrefixTransferTo }, to);
+        Storage.Put(Storage.CurrentContext, new byte[] { PrefixTransferAmount }, amount);
+        ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, to, amount));
+    }
+
+    public static void Vote(ECPoint target)
+    {
+        Storage.Put(Storage.CurrentContext, new byte[] { PrefixVote }, target);
+        ExecutionEngine.Assert(NEO.Vote(Runtime.ExecutingScriptHash, target));
+    }
+
+    public static UInt160 LastTransferTo()
+    {
+        var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixTransferTo });
+        return value is null ? UInt160.Zero : (UInt160)(byte[])value;
+    }
+
+    public static BigInteger LastTransferAmount()
+    {
+        var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixTransferAmount });
+        return value is null ? BigInteger.Zero : (BigInteger)value;
+    }
+
+    public static ECPoint LastVote()
+    {
+        var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixVote });
+        return value is null ? null : (ECPoint)(byte[])value;
+    }
+
+    public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
+    {
+    }
+}
+";
     }
 
     private StackItem Invoke(UInt160 contract, string operation, params object[] args)
