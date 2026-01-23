@@ -60,4 +60,20 @@ public class TrustAnchorTests
         Assert.Equal(fixture.UserHash, fixture.AgentLastTransferTo());
         Assert.Equal(new BigInteger(1), fixture.AgentLastTransferAmount());
     }
+
+    [Fact]
+    public void TrigVote_requires_strategist_and_whitelisted_candidate()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAgent(0, fixture.AgentHash);
+        var candidate = fixture.OwnerPubKey;
+
+        Assert.ThrowsAny<Exception>(() => fixture.CallFrom(fixture.StrangerHash, "trigVote", 0, candidate));
+
+        fixture.AllowCandidate(candidate);
+        fixture.SetStrategist(fixture.StrategistHash);
+        fixture.CallFrom(fixture.StrategistHash, "trigVote", 0, candidate);
+
+        Assert.Equal(candidate, fixture.AgentLastVote());
+    }
 }
