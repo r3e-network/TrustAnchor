@@ -49,8 +49,15 @@ mkdir -p "${BUILD_DIR}" "${INVOKE_DIR}"
 "${NEOXP}" wallet create -i "${EXPRESS_FILE}" -p "${DEV2_PRIVATE_KEY}" -f dev2 >/dev/null
 
 OWNER_HASH="$("${NEOXP}" wallet list -i "${EXPRESS_FILE}" -j | jq -r '.dev[0]."script-hash"')"
-OWNER_PUBKEY="$("${NEOXP}" wallet list -i "${EXPRESS_FILE}" -j | jq -r '.dev[0]."public-key"')"
-DEV2_HASH="$("${NEOXP}" wallet list -i "${EXPRESS_FILE}" -j | jq -r '.dev2[0]."script-hash"')"
+
+CANDIDATE_PUBKEYS=()
+for i in $(seq 1 21); do
+  key="$(printf "%064x" "${i}")"
+  name="candidate${i}"
+  "${NEOXP}" wallet create -i "${EXPRESS_FILE}" -p "${key}" -f "${name}" >/dev/null
+  pubkey="$("${NEOXP}" wallet list -i "${EXPRESS_FILE}" -j | jq -r --arg name "${name}" '.[$name][0]."public-key"')"
+  CANDIDATE_PUBKEYS+=("${pubkey}")
+done
 
 mkdir -p "${BUILD_DIR}/TrustAnchor"
 sed "s/\\[TODO\\]: ARGS/${OWNER_HASH}/g" "${ROOT}/code/TrustAnchor.cs" > "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs"
@@ -114,63 +121,69 @@ gas_dev2_output="$("${NEOXP}" transfer -i "${EXPRESS_FILE}" -p "${PASSWORD}" 100
 gas_dev2_hash="$(echo "${gas_dev2_output}" | awk '{print $3}')"
 wait_tx "${gas_dev2_hash}"
 
-register_output="$("${NEOXP}" candidate register -i "${EXPRESS_FILE}" -p "${PASSWORD}" dev)"
-register_hash="$(echo "${register_output}" | awk '{print $4}')"
-wait_tx "${register_hash}"
-
 sleep 2
 
 "${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev >/dev/null
 "${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev >/dev/null
 "${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev2 >/dev/null
 
-cat > "${INVOKE_DIR}/setagent.json" <<EOF
+for i in $(seq 0 20); do
+  agent_hash="${AGENT_HASH}"
+  if [[ "${i}" -eq 1 ]]; then
+    agent_hash="${AGENT2_HASH}"
+  fi
+  cat > "${INVOKE_DIR}/setagent-${i}.json" <<EOF
 {
   "contract": "${TRUST_HASH}",
   "operation": "setAgent",
   "args": [
-    {"type": "Integer", "value": "0"},
-    {"type": "Hash160", "value": "${AGENT_HASH}"}
+    {"type": "Integer", "value": "${i}"},
+    {"type": "Hash160", "value": "${agent_hash}"}
   ]
 }
 EOF
-invoke_tx "${INVOKE_DIR}/setagent.json" dev
-cat > "${INVOKE_DIR}/setagent1.json" <<EOF
-{
-  "contract": "${TRUST_HASH}",
-  "operation": "setAgent",
-  "args": [
-    {"type": "Integer", "value": "1"},
-    {"type": "Hash160", "value": "${AGENT2_HASH}"}
-  ]
-}
-EOF
-invoke_tx "${INVOKE_DIR}/setagent1.json" dev
+  invoke_tx "${INVOKE_DIR}/setagent-${i}.json" dev
+done
 
 sleep 2
 
-cat > "${INVOKE_DIR}/allowcandidate.json" <<EOF
+cat > "${INVOKE_DIR}/beginconfig.json" <<EOF
 {
   "contract": "${TRUST_HASH}",
-  "operation": "allowCandidate",
+  "operation": "beginConfig",
+  "args": []
+}
+EOF
+invoke_tx "${INVOKE_DIR}/beginconfig.json" dev
+
+for i in $(seq 0 20); do
+  weight="0"
+  if [[ "${i}" -eq 0 ]]; then
+    weight="21"
+  fi
+  pubkey="${CANDIDATE_PUBKEYS[$i]}"
+  cat > "${INVOKE_DIR}/setagentconfig-${i}.json" <<EOF
+{
+  "contract": "${TRUST_HASH}",
+  "operation": "setAgentConfig",
   "args": [
-    {"type": "PublicKey", "value": "${OWNER_PUBKEY}"}
+    {"type": "Integer", "value": "${i}"},
+    {"type": "PublicKey", "value": "${pubkey}"},
+    {"type": "Integer", "value": "${weight}"}
   ]
 }
 EOF
-invoke_tx "${INVOKE_DIR}/allowcandidate.json" dev
+  invoke_tx "${INVOKE_DIR}/setagentconfig-${i}.json" dev
+done
 
-sleep 2
-
-cat > "${INVOKE_DIR}/candidate.json" <<EOF
+cat > "${INVOKE_DIR}/finalizeconfig.json" <<EOF
 {
   "contract": "${TRUST_HASH}",
-  "operation": "candidate",
-  "args": [
-    {"type": "PublicKey", "value": "${OWNER_PUBKEY}"}
-  ]
+  "operation": "finalizeConfig",
+  "args": []
 }
 EOF
+invoke_tx "${INVOKE_DIR}/finalizeconfig.json" dev
 
 cat > "${INVOKE_DIR}/neo-transfer.json" <<EOF
 {
@@ -232,68 +245,12 @@ cat > "${INVOKE_DIR}/gas-transfer.json" <<EOF
   ]
 }
 EOF
-cat > "${INVOKE_DIR}/trigvote.json" <<EOF
-{
-  "contract": "${TRUST_HASH}",
-  "operation": "trigVote",
-  "args": [
-    {"type": "Integer", "value": "0"},
-    {"type": "PublicKey", "value": "${OWNER_PUBKEY}"}
-  ]
-}
-EOF
-cat > "${INVOKE_DIR}/trigtransfer.json" <<EOF
-{
-  "contract": "${TRUST_HASH}",
-  "operation": "trigTransfer",
-  "args": [
-    {"type": "Integer", "value": "0"},
-    {"type": "Integer", "value": "1"},
-    {"type": "Integer", "value": "1"}
-  ]
-}
-EOF
-cat > "${INVOKE_DIR}/getaccountstate-agent0.json" <<EOF
-{
-  "contract": "0xef4073a0f2b305a38ec4050e4d3d28bc40ea63f5",
-  "operation": "getAccountState",
-  "args": [
-    {"type": "Hash160", "value": "${AGENT_HASH}"}
-  ]
-}
-EOF
-cat > "${INVOKE_DIR}/neobalance-agent1.json" <<EOF
-{
-  "contract": "0xef4073a0f2b305a38ec4050e4d3d28bc40ea63f5",
-  "operation": "balanceOf",
-  "args": [
-    {"type": "Hash160", "value": "${AGENT2_HASH}"}
-  ]
-}
-EOF
 
 sleep 2
 total_stake=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/totalstake.json" dev | jq -r '.stack[0].value')
 stake_of=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/stakeof.json" dev | jq -r '.stack[0].value')
 if [[ "${total_stake}" != "100000000" || "${stake_of}" != "100000000" ]]; then
   echo "stake mismatch: total=${total_stake} stakeOf=${stake_of}" >&2
-  exit 1
-fi
-
-candidate_type=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/candidate.json" dev | jq -r '.stack[0].type')
-if [[ "${candidate_type}" != "ByteString" ]]; then
-  echo "candidate not whitelisted" >&2
-  exit 1
-fi
-
-invoke_tx "${INVOKE_DIR}/trigvote.json" dev
-sleep 2
-
-invoke_tx "${INVOKE_DIR}/trigtransfer.json" dev
-sleep 2
-agent1_balance=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/neobalance-agent1.json" dev | jq -r '.stack[0].value')
-if [[ "${agent1_balance}" != "1" ]]; then
-  echo "agent1 balance mismatch: ${agent1_balance}" >&2
   exit 1
 fi
 

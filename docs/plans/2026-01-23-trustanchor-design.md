@@ -1,5 +1,7 @@
 # TrustAnchor design (no deposit token)
 
+> Deprecated: superseded by `docs/plans/2026-01-24-trustanchor-onchain-voting-design.md` for the on-chain voting flow (no strategist/TEE).
+
 ## Context
 TrustAnchor tracks NEO deposits internally and distributes GAS rewards via an on-chain reward-per-share (RPS) mechanism. Voting decisions (who to vote for and how much) are computed off-chain in the TEE strategist tool and submitted as `trigVote`/`trigTransfer` calls. The goal is to remove the deposit token and the existing profit-based voting heuristic, while keeping the operational flow, reward distribution, and TEE-driven voting.
 
