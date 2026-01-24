@@ -18,6 +18,9 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Install Neo Compiler
+        run: dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
+
       - name: Build and Test Contract
         run: |
           cd contract/TrustAnchor.Tests
