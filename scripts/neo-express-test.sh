@@ -60,13 +60,13 @@ for i in $(seq 1 21); do
 done
 
 mkdir -p "${BUILD_DIR}/TrustAnchor"
-sed "s/\\[TODO\\]: ARGS/${OWNER_HASH}/g" "${ROOT}/code/TrustAnchor.cs" > "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs"
+sed "s/\\[TODO\\]: ARGS/${OWNER_HASH}/g" "${ROOT}/contract/TrustAnchor.cs" > "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs"
 "${NCCS}" -o "${BUILD_DIR}/TrustAnchor" "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs" >/dev/null
 
 TRUST_HASH="$("${NEOXP}" contract hash -i "${EXPRESS_FILE}" "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev)"
 
 mkdir -p "${BUILD_DIR}/TrustAnchorAgent"
-sed "s/\\[TODO\\]: ARGS/${TRUST_HASH}/g" "${ROOT}/code/TrustAnchorAgent.cs" \
+sed "s/\\[TODO\\]: ARGS/${TRUST_HASH}/g" "${ROOT}/contract/TrustAnchorAgent.cs" \
   > "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.cs"
 "${NCCS}" -o "${BUILD_DIR}/TrustAnchorAgent" --base-name TrustAnchorAgent "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.cs" >/dev/null
 
