@@ -43,7 +43,6 @@ public sealed class TrustAnchorFixture
     private readonly Signer _committeeSigner;
     private readonly Signer _validatorsSigner;
     private readonly Signer _otherSigner;
-    private readonly Signer _strategistSigner;
     private readonly Signer _strangerSigner;
 
     public UInt160 OwnerHash { get; }
@@ -51,7 +50,6 @@ public sealed class TrustAnchorFixture
     public UInt160 TrustHash { get; }
     public UInt160 UserHash { get; }
     public UInt160 OtherHash { get; }
-    public UInt160 StrategistHash { get; }
     public UInt160 StrangerHash { get; }
     private readonly UInt160[] _agentHashes;
 
@@ -65,13 +63,11 @@ public sealed class TrustAnchorFixture
         var ownerKey = new KeyPair(Enumerable.Repeat((byte)0x01, 32).ToArray());
         var userKey = new KeyPair(Enumerable.Repeat((byte)0x02, 32).ToArray());
         var otherKey = new KeyPair(Enumerable.Repeat((byte)0x03, 32).ToArray());
-        var strategistKey = new KeyPair(Enumerable.Repeat((byte)0x04, 32).ToArray());
         var strangerKey = new KeyPair(Enumerable.Repeat((byte)0x05, 32).ToArray());
         OwnerPubKey = ownerKey.PublicKey;
         OwnerHash = ownerKey.PublicKeyHash;
         UserHash = userKey.PublicKeyHash;
         OtherHash = otherKey.PublicKeyHash;
-        StrategistHash = strategistKey.PublicKeyHash;
         StrangerHash = strangerKey.PublicKeyHash;
 
         _ownerSigner = new Signer { Account = OwnerHash, Scopes = WitnessScope.CalledByEntry };
@@ -79,7 +75,6 @@ public sealed class TrustAnchorFixture
         _committeeSigner = new Signer { Account = _engine.CommitteeAddress, Scopes = WitnessScope.CalledByEntry };
         _validatorsSigner = new Signer { Account = _engine.ValidatorsAddress, Scopes = WitnessScope.CalledByEntry };
         _otherSigner = new Signer { Account = OtherHash, Scopes = WitnessScope.CalledByEntry };
-        _strategistSigner = new Signer { Account = StrategistHash, Scopes = WitnessScope.CalledByEntry };
         _strangerSigner = new Signer { Account = StrangerHash, Scopes = WitnessScope.CalledByEntry };
 
         var trustSource = PatchTrustAnchorSource(OwnerHash);
@@ -251,7 +246,6 @@ public sealed class TrustAnchorFixture
         if (account == OwnerHash) return _ownerSigner;
         if (account == UserHash) return _userSigner;
         if (account == OtherHash) return _otherSigner;
-        if (account == StrategistHash) return _strategistSigner;
         if (account == StrangerHash) return _strangerSigner;
         if (account == _engine.CommitteeAddress) return _committeeSigner;
         if (account == _engine.ValidatorsAddress) return _validatorsSigner;
