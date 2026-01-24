@@ -8,14 +8,10 @@ The TEE tools now target the TrustAnchor core contract by default.
 Environment variables:
 
 - `TRUSTANCHOR`: TrustAnchor script hash (defaults to a placeholder hash for compatibility).
-- `VOTE_CONFIG`: Path to the vote config JSON used by `TrustAnchorStrategist`.
 
-Vote config rules:
+Voting configuration now happens on-chain:
 
-- The config must include exactly one entry per agent.
-- The sum of `weight` values must be `21`.
-- All configured pubkeys must be whitelisted on-chain.
-
-Example config: `TEE/TrustAnchorStrategist/vote-config.example.json`
-
-Suggested workflow: update the config in GitHub and restart the TEE process so the new weights take effect.
+- `beginConfig`
+- `setAgentConfig`
+- `finalizeConfig`
+- `rebalanceVotes`
