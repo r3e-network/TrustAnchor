@@ -810,14 +810,6 @@ namespace TrustAnchor
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY });
         }
 
-        /// <summary>DEPRECATED: Use InitiateOwnerTransfer/AcceptOwnerTransfer for security</summary>
-        public static void SetOwner(UInt160 owner)
-        {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-            ExecutionEngine.Assert(owner != UInt160.Zero);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, owner);
-        }
-
         /// <summary>Set agent contract address for an index</summary>
         public static void SetAgent(BigInteger i, UInt160 agent)
         {
