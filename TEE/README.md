@@ -16,6 +16,7 @@ The TEE tools automate operational tasks for TrustAnchor:
 
 | Project                       | Purpose                                      | Schedule      |
 | ----------------------------- | -------------------------------------------- | ------------- |
+| **TrustAnchorDeployer**       | Deploy TrustAnchor and 21 Agent contracts   | Manual        |
 | **TrustAnchorClaimer**        | Claims unclaimed GAS from 21 Agent contracts | Every 6 hours |
 | **TrustAnchorRepresentative** | Distributes GAS to contributors              | Every 6 hours |
 | **KeyGenerator**              | Generates NEO keypairs                       | Manual        |
@@ -27,6 +28,31 @@ The TEE tools automate operational tasks for TrustAnchor:
 | **LibHelper** | Utility methods and extensions            |
 | **LibRPC**    | NEO RPC client wrapper                    |
 | **LibWallet** | Wallet operations and transaction signing |
+
+## Deployment Tool
+
+### TrustAnchorDeployer
+
+One-time deployment tool for:
+
+1. **Deploy TrustAnchor Contract** - Compiles and deploys the main staking contract
+2. **Deploy 21 Agent Contracts** - Creates all required agent contracts
+3. **Register Agents** - Configures agent addresses in TrustAnchor
+4. **Initial Configuration** - Sets up equal weight distribution
+
+**Usage:**
+```bash
+cd TEE
+dotnet run --project TrustAnchorDeployer
+```
+
+**Environment Variables:**
+- `WIF` - Deployer wallet private key
+- `RPC` - NEO RPC endpoint (testnet/mainnet)
+- `OWNER_HASH` - Owner address script hash
+- `SCRIPTS_DIR` - Path to contract source files (default: contract/)
+
+**Workflow:** `TEE/.github/workflows/TrustAnchorDeployer.yml`
 
 ## Configuration
 
