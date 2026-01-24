@@ -197,7 +197,7 @@ namespace TrustAnchor
                 {
                     BigInteger rps = RPS();
 
-                    // Update RPS accumulator:
+                    // Update RPS accumulator with overflow protection:
                     // RPS += amount × 99% / totalStake
                     //
                     // This ensures:
@@ -208,7 +208,13 @@ namespace TrustAnchor
                     // Example: 100 GAS with 1000 NEO stake
                     //   RPS += 100 × 99,000,000 / 1,000 = 9,900,000
                     //   User with 100 NEO (10%) earns: 100 × 9,900,000 / 100,000,000 = 9.9
-                    Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED }, amount * DEFAULTCLAIMREMAIN / ts + rps);
+                    //
+                    // SECURITY: Check for overflow in RPS calculation
+                    BigInteger rewardShare = amount * DEFAULTCLAIMREMAIN / ts;
+                    ExecutionEngine.Assert(rewardShare >= BigInteger.Zero);  // No overflow
+                    BigInteger newRps = rps + rewardShare;
+                    ExecutionEngine.Assert(newRps >= rps);  // Verify no overflow occurred
+                    Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED }, newRps);
                 }
             }
 
@@ -426,6 +432,50 @@ namespace TrustAnchor
             ExecutionEngine.Assert(remaining == BigInteger.Zero);
         }
 
+        /// <summary>
+        /// Emergency withdraw function for extreme scenarios.
+        /// SECURITY: Only callable when:
+        /// 1. Contract is paused (by owner)
+        /// 2. All agent contracts have zero NEO balance
+        /// 3. User has staked NEO in the contract
+        /// 
+        /// This prevents permanent fund lock when all agents are empty.
+        /// </summary>
+        /// <param name="account">User requesting emergency withdraw</param>
+        public static void EmergencyWithdraw(UInt160 account)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(account) || Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPaused()); // Only when paused
+            
+            BigInteger stake = StakeOf(account);
+            ExecutionEngine.Assert(stake > BigInteger.Zero); // Must have stake
+
+            // Verify all agents have zero balance (agent contracts are empty)
+            for (int i = 0; i < MAXAGENTS; i++)
+            {
+                UInt160 agent = Agent(i);
+                if (agent != null && agent != UInt160.Zero)
+                {
+                    BigInteger balance = (BigInteger)Contract.Call(NEO.Hash, "balanceOf", CallFlags.ReadStates, agent);
+                    ExecutionEngine.Assert(balance == BigInteger.Zero, "All agents must be empty");
+                }
+            }
+
+            // Sync rewards before withdrawal
+            SyncAccount(account);
+
+            // Update user's stake
+            new StorageMap(Storage.CurrentContext, PREFIXSTAKE).Put(account, BigInteger.Zero);
+
+            // Update total stake
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE }, TotalStake() - stake);
+
+            // IMPORTANT: Direct NEO transfer from contract
+            // This bypasses agent contracts since they are all empty
+            // User gets their NEO back, though this is a rare emergency scenario
+            ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, account, stake));
+        }
+
         // ========================================
         // Configuration Management
         // ========================================
@@ -476,7 +526,13 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(IsPendingConfigActive());
             ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS_BIG);
-            ExecutionEngine.Assert(weight >= BigInteger.Zero);
+            
+            // SECURITY: Enhanced input validation
+            ExecutionEngine.Assert(weight >= BigInteger.Zero && weight <= TOTALWEIGHT, "Weight must be 0-21");
+            
+            // Validate ECPoint format (should be 33 bytes in compressed form)
+            var targetBytes = (byte[])(object)target;
+            ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33, "Invalid ECPoint format");
 
             var data = SerializeAgentConfig(target, weight);
             new StorageMap(Storage.CurrentContext, PREFIXPENDINGCONFIG).Put((ByteString)index, data);
@@ -490,9 +546,34 @@ namespace TrustAnchor
             ExecutionEngine.Assert(targets.Length == MAXAGENTS && weights.Length == MAXAGENTS);
 
             var pendingMap = new StorageMap(Storage.CurrentContext, PREFIXPENDINGCONFIG);
+            
             for (int i = 0; i < MAXAGENTS; i++)
             {
-                ExecutionEngine.Assert(weights[i] >= BigInteger.Zero);
+                ExecutionEngine.Assert(weights[i] >= BigInteger.Zero && weights[i] <= TOTALWEIGHT, "Weight must be 0-21");
+                
+                // Validate ECPoint format
+                var targetBytes = (byte[])(object)targets[i];
+                ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33, "Invalid ECPoint format");
+                
+                // SECURITY: Check for duplicate targets (O(n^2) but n=21 is small)
+                for (int j = 0; j < i; j++)
+                {
+                    var prevBytes = (byte[])(object)targets[j];
+                    if (prevBytes is not null && targetBytes is not null)
+                    {
+                        bool isDuplicate = true;
+                        for (int k = 0; k < 33; k++)
+                        {
+                            if (prevBytes[k] != targetBytes[k])
+                            {
+                                isDuplicate = false;
+                                break;
+                            }
+                        }
+                        ExecutionEngine.Assert(!isDuplicate, "Duplicate target detected");
+                    }
+                }
+                
                 var data = SerializeAgentConfig(targets[i], weights[i]);
                 pendingMap.Put(AgentKey(i), data);
             }
@@ -517,7 +598,9 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(IsPendingConfigActive());
             ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS_BIG);
-            ExecutionEngine.Assert(weight >= BigInteger.Zero);
+            
+            // SECURITY: Validate weight bounds
+            ExecutionEngine.Assert(weight >= BigInteger.Zero && weight <= TOTALWEIGHT, "Weight must be 0-21");
 
             // Preserve current target, update weight only
             var currentTarget = AgentConfig_GetTarget(index);
@@ -814,6 +897,13 @@ namespace TrustAnchor
         public static void SetAgent(BigInteger i, UInt160 agent)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(i >= 0 && i < MAXAGENTS_BIG);
+            ExecutionEngine.Assert(agent != UInt160.Zero);
+            
+            // SECURITY: Basic agent address validation
+            // Full contract verification happens during contract deployment
+            
+            // Store agent address
             new StorageMap(Storage.CurrentContext, PREFIXAGENT).Put((ByteString)i, agent);
         }
 
