@@ -25,7 +25,7 @@ jobs:
           # Install Neo compiler
           dotnet new -i Neo.Compiler.CSharp::3.8.1
           # Copy and patch contract source
-          sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../code/TrustAnchor.cs > TrustAnchor.cs
+          sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../contract/TrustAnchor.cs > TrustAnchor.cs
           # Build contract
           dotnet build
           # Copy output files
@@ -45,7 +45,7 @@ jobs:
             # Create project with contract template
             dotnet new neo3-contract --force
             # Patch with TrustAnchor hash
-            sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../../code/TrustAnchorAgent.cs > TrustAnchorAgent${i}.cs
+            sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../../contract/TrustAnchorAgent.cs > TrustAnchorAgent${i}.cs
             # Build
             dotnet build
             # Copy output
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run Tests
         run: |
-          cd code/TrustAnchor.Tests
+          cd contract/TrustAnchor.Tests
           dotnet test --no-build --verbosity normal
 
       - name: Release

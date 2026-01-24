@@ -14,7 +14,7 @@ git clone https://github.com/r3e-network/TrustAnchor.git
 cd TrustAnchor
 
 # Build contracts
-cd code
+cd contract
 dotnet build TrustAnchor.Tests/TrustAnchor.Tests.csproj
 
 # Run tests
@@ -25,7 +25,7 @@ dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 
 ```
 TrustAnchor/
-├── code/                           # Smart contract source code
+├── contract/                       # Smart contract source code
 │   ├── TrustAnchor.cs             # Main staking and delegation contract
 │   ├── TrustAnchorAgent.cs        # Agent contract for voting
 │   ├── TrustAnchor.Tests/         # Test suite
@@ -85,12 +85,12 @@ Unlike traditional voting systems that often concentrate power based on wealth, 
 
 ### Building Contracts
 
-The project uses a custom compilation process via the NEO compiler. See [code/README.md](code/README.md) for detailed contract documentation.
+The project uses a custom compilation process via the NEO compiler. See [contract/README.md](contract/README.md) for detailed contract documentation.
 
 ### Running Tests
 
 ```bash
-cd code
+cd contract
 dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 ```
 
