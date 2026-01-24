@@ -323,7 +323,7 @@ public class TestAgent : SmartContract
     private static string PatchTrustAnchorSource(UInt160 ownerHash)
     {
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var sourcePath = Path.Combine(repoRoot, "code", "TrustAnchor.cs");
+        var sourcePath = Path.Combine(repoRoot, "contract", "TrustAnchor.cs");
         var source = File.ReadAllText(sourcePath);
         return source.Replace("[TODO]: ARGS", ownerHash.ToString());
     }
