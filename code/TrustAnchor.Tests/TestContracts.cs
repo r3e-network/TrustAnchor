@@ -20,6 +20,9 @@ using Neo.Wallets;
 
 namespace TrustAnchor.Tests;
 
+#pragma warning disable CS8600 // NEO test framework conversion
+#pragma warning disable CS8603 // Test framework return handled
+
 public sealed class TrustAnchorFixture
 {
     private static readonly string CompilerDir = Path.Combine(

@@ -32,12 +32,12 @@ public class TrustAnchorTests
         fixture.FinalizeConfig();
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
-        Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
-        Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("totalStake"));
+        Assert.Equal(new BigInteger(2), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
+        Assert.Equal(new BigInteger(2), fixture.Call<BigInteger>("totalStake"));
     }
 
     [Fact]
-    public void Neo_deposit_supports_large_stake_values()
+    public void Neo_deposit_uses_integer_neo_units()
     {
         var fixture = new TrustAnchorFixture();
         fixture.SetAllAgents();
@@ -50,9 +50,9 @@ public class TrustAnchorTests
         fixture.MintNeo(fixture.UserHash, depositAmount);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, depositAmount);
 
-        BigInteger expectedStake = depositAmount * BigInteger.Parse("100000000");
-        Assert.Equal(expectedStake, fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
-        Assert.True(expectedStake > int.MaxValue);
+        BigInteger stake = fixture.Call<BigInteger>("stakeOf", fixture.UserHash);
+        Assert.Equal(depositAmount, stake);
+        Assert.NotEqual(depositAmount * BigInteger.Parse("100000000"), stake);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class TrustAnchorTests
         fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 1);
         var after = fixture.NeoBalance(fixture.UserHash);
 
-        Assert.Equal(new BigInteger(2_0000_0000), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
+        Assert.Equal(new BigInteger(2), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
         Assert.True(after > before);
         Assert.Equal(fixture.UserHash, fixture.AgentLastTransferTo());
         Assert.Equal(new BigInteger(1), fixture.AgentLastTransferAmount());

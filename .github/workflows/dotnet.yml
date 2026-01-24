@@ -1,0 +1,70 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Build TrustAnchor
+        run: |
+          mkdir -p TrustAnchor
+          cd TrustAnchor
+          # Install Neo compiler
+          dotnet new -i Neo.Compiler.CSharp::3.8.1
+          # Copy and patch contract source
+          sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../code/TrustAnchor.cs > TrustAnchor.cs
+          # Build contract
+          dotnet build
+          # Copy output files
+          mv bin/sc/* ./
+          rm -rf bin obj
+
+      - name: Build TrustAnchorAgent (all 21 agents)
+        run: |
+          # Install Neo compiler (if not already installed)
+          dotnet new -i Neo.Compiler.CSharp::3.8.0
+
+          # Build all 21 agent contracts
+          for i in {0..20}; do
+            echo "Building TrustAnchorAgent${i}..."
+            mkdir -p TrustAnchorAgent${i}
+            cd TrustAnchorAgent${i}
+            # Create project with contract template
+            dotnet new neo3-contract --force
+            # Patch with TrustAnchor hash
+            sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../../code/TrustAnchorAgent.cs > TrustAnchorAgent${i}.cs
+            # Build
+            dotnet build
+            # Copy output
+            mv bin/sc/* ./
+            rm -rf bin obj
+            cd ..
+          done
+
+      - name: Run Tests
+        run: |
+          cd code/TrustAnchor.Tests
+          dotnet test --no-build --verbosity normal
+
+      - name: Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        run: |
+          git config --global user.email "trustanchor@trustanchor.github.io"
+          git config --global user.name "trustanchor"
+          git checkout -b release
+          git add .
+          git commit -m 'release'
+          git push -f origin release
