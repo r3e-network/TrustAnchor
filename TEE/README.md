@@ -7,7 +7,7 @@ The TEE tools now target the TrustAnchor core contract by default.
 
 Environment variables:
 
-- `TRUSTANCHOR`: TrustAnchor script hash (defaults to a placeholder hash for compatibility).
+- `TRUSTANCHOR`: TrustAnchor script hash (required).
 
 Voting configuration now happens on-chain:
 

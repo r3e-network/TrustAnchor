@@ -13,14 +13,11 @@ namespace TrustAnchorRepresentative
 {
     class Program
     {
-        private const string DefaultTrustAnchor = "0x48c40d4666f93408be1bef038b6722404d9a4c2a";
         private static readonly BigInteger THREASHOLD = BigInteger.Parse(Environment.GetEnvironmentVariable("THREASHOLD"));
-        private static readonly UInt160 TARGET = UInt160.Parse(Environment.GetEnvironmentVariable("TARGET")
-            ?? (Environment.GetEnvironmentVariable("TRUSTANCHOR") ?? DefaultTrustAnchor));
-
 
         static void Main(string[] args)
         {
+            UInt160 target = GetTarget();
             UInt160 REPRESENTATIVE = UInt160.Parse("0x329aeff39c13550337f02296d5ffc82583acaba3");
             BigInteger BLOCKNUM = NativeContract.Ledger.Hash.MakeScript("currentIndex").Call().Single().GetInteger();
             BigInteger GASBALANCE = NativeContract.GAS.Hash.MakeScript("balanceOf", new object[]{ REPRESENTATIVE }).Call().Single().GetInteger();
@@ -32,9 +29,21 @@ namespace TrustAnchorRepresentative
                 return;
             }
 
-            byte[] REWARD = NativeContract.GAS.Hash.MakeScript("transfer", new object[]{ REPRESENTATIVE, TARGET, GASBALANCE-1_0000_0000, "reward"});
+            byte[] REWARD = NativeContract.GAS.Hash.MakeScript("transfer", new object[]{ REPRESENTATIVE, target, GASBALANCE-1_0000_0000, "reward"});
 
             REWARD.SendTx().Out();
+        }
+
+        private static UInt160 GetTarget()
+        {
+            var targetHash = Environment.GetEnvironmentVariable("TARGET");
+            var trustAnchorHash = Environment.GetEnvironmentVariable("TRUSTANCHOR");
+            var selected = string.IsNullOrWhiteSpace(targetHash) ? trustAnchorHash : targetHash;
+            if (string.IsNullOrWhiteSpace(selected))
+            {
+                throw new InvalidOperationException("TARGET or TRUSTANCHOR env var is required.");
+            }
+            return UInt160.Parse(selected);
         }
     }
 }

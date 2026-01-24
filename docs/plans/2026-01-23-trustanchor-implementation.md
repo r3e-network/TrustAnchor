@@ -338,7 +338,6 @@ No automated tests; rely on build to ensure changes compile.
 
 **Step 3: Write minimal implementation**
 
-- Replace hard-coded `BNEO` hashes with `TRUSTANCHOR` env var (default to existing hash for compatibility).
 - Ensure any target address defaults to `TRUSTANCHOR` if not explicitly provided.
 
 **Step 4: Run build to verify it passes**
