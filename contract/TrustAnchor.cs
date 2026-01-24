@@ -855,12 +855,6 @@ namespace TrustAnchor
             ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, Owner(), amount));
         }
 
-        /// <summary>DEPRECATED: Use WithdrawGAS instead</summary>
-        public static void Pika(BigInteger amount)
-        {
-            WithdrawGAS(amount);
-        }
-
         // ========================================
         // Helper Methods
         // ========================================
