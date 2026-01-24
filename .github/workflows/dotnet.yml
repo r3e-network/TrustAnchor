@@ -18,46 +18,20 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Build TrustAnchor
-        run: |
-          mkdir -p TrustAnchor
-          cd TrustAnchor
-          # Install Neo compiler
-          dotnet new -i Neo.Compiler.CSharp::3.8.1
-          # Copy and patch contract source
-          sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../contract/TrustAnchor.cs > TrustAnchor.cs
-          # Build contract
-          dotnet build
-          # Copy output files
-          mv bin/sc/* ./
-          rm -rf bin obj
-
-      - name: Build TrustAnchorAgent (all 21 agents)
-        run: |
-          # Install Neo compiler (if not already installed)
-          dotnet new -i Neo.Compiler.CSharp::3.8.0
-
-          # Build all 21 agent contracts
-          for i in {0..20}; do
-            echo "Building TrustAnchorAgent${i}..."
-            mkdir -p TrustAnchorAgent${i}
-            cd TrustAnchorAgent${i}
-            # Create project with contract template
-            dotnet new neo3-contract --force
-            # Patch with TrustAnchor hash
-            sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../../contract/TrustAnchorAgent.cs > TrustAnchorAgent${i}.cs
-            # Build
-            dotnet build
-            # Copy output
-            mv bin/sc/* ./
-            rm -rf bin obj
-            cd ..
-          done
-
-      - name: Run Tests
+      - name: Build and Test Contract
         run: |
           cd contract/TrustAnchor.Tests
+          dotnet build
           dotnet test --no-build --verbosity normal
+
+      - name: Build TEE Projects
+        run: |
+          dotnet build TEE/LibHelper/LibHelper.csproj
+          dotnet build TEE/LibRPC/LibRPC.csproj
+          dotnet build TEE/LibWallet/LibWallet.csproj
+          dotnet build TEE/KeyGenerator/KeyGenerator.csproj
+          dotnet build TEE/TrustAnchorClaimer/TrustAnchorClaimer.csproj
+          dotnet build TEE/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj
 
       - name: Release
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
