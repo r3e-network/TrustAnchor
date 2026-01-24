@@ -3,3 +3,6 @@
 # .NET build artifacts
 **/bin/
 **/obj/
+
+# Neo Express local chain data
+.neo-express/

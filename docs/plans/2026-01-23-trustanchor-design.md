@@ -1,10 +1,12 @@
-# TrustAnchor design (NeoBurger-derived, no bNEO)
+# TrustAnchor design (no deposit token)
+
+> Deprecated: superseded by `docs/plans/2026-01-24-trustanchor-onchain-voting-design.md` for the on-chain voting flow (no strategist/TEE).
 
 ## Context
-NeoBurger currently uses a NEP-17 token (bNEO) to represent deposits and distribute GAS rewards via an on-chain reward-per-share (RPS) mechanism. Voting decisions (who to vote for and how much) are computed off-chain in the TEE strategist tool and submitted as `trigVote`/`trigTransfer` calls. The goal is to remove the bNEO token and the existing profit-based voting heuristic, while keeping the NeoBurger operational flow, reward distribution, and TEE-driven voting.
+TrustAnchor tracks NEO deposits internally and distributes GAS rewards via an on-chain reward-per-share (RPS) mechanism. Voting decisions (who to vote for and how much) are computed off-chain in the TEE strategist tool and submitted as `trigVote`/`trigTransfer` calls. The goal is to remove the deposit token and the existing profit-based voting heuristic, while keeping the operational flow, reward distribution, and TEE-driven voting.
 
 ## Goals
-- Replace bNEO with an internal deposit ledger tied to NEO deposits.
+- Use an internal deposit ledger tied to NEO deposits.
 - Keep GAS reward distribution using the same RPS/Reward/Paid mechanism.
 - Keep the agent/strategist/whitelist control flow on-chain.
 - Move voting decisions entirely off-chain via a config file with weights.
@@ -17,24 +19,24 @@ NeoBurger currently uses a NEP-17 token (bNEO) to represent deposits and distrib
 
 ## Architecture
 ### On-chain: TrustAnchor (new core contract)
-- Roles: `Owner`, `Strategist`, `Agent(i)` and candidate whitelist (same as NeoBurger).
+- Roles: `Owner`, `Strategist`, `Agent(i)` and candidate whitelist.
 - Internal stake ledger: `Stake(account)` and `TotalStake` stored in contract storage.
-- GAS reward accounting: `RPS`, `Reward(account)`, `Paid(account)` using the same formula as NeoBurger.
+- GAS reward accounting: `RPS`, `Reward(account)`, `Paid(account)` using the same formula as the current contract.
 - Voting controls:
   - `TrigVote(i, candidate)` only by strategist and only for whitelisted candidates.
   - `TrigTransfer(i, j, amount)` only by strategist.
 - Administration: set owner/strategist/agents, whitelist candidates, update contract.
 
 ### Off-chain: TEE tools
-- `BurgerStrategist`: rewritten to load a weight-based config file and compute target vote allocations.
-- `BurgerClaimer`/`BurgerRepresentative`: keep existing logic but target the TrustAnchor script hash.
+- `TrustAnchorStrategist`: rewritten to load a weight-based config file and compute target vote allocations.
+- `TrustAnchorClaimer`/`TrustAnchorRepresentative`: keep existing logic but target the TrustAnchor script hash.
 - Config is updated via GitHub, and the TEE process is restarted to apply changes.
 
 ## Contract behavior
 ### Deposits
 - `OnNEP17Payment` handles NEO deposits only.
 - When NEO is sent to TrustAnchor:
-  - Credit `Stake(sender)` by `amount * 1e8` (same scaling as bNEO).
+  - Credit `Stake(sender)` by `amount * 1e8` to preserve precision.
   - Increase `TotalStake` by the same amount.
   - Transfer the NEO to `Agent(0)` (existing flow).
 - On GAS transfers to TrustAnchor:
@@ -91,7 +93,7 @@ candidates:
 ## Testing
 ### On-chain
 - Deposit/withdraw consistency and stake accounting.
-- GAS reward distribution via RPS matching NeoBurger behavior.
+- GAS reward distribution via RPS matching contract behavior.
 - Strategist-only enforcement for vote/transfer.
 
 ### Off-chain
