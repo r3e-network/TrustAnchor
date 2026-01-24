@@ -35,13 +35,3 @@ jobs:
           dotnet build TEE/KeyGenerator/KeyGenerator.csproj
           dotnet build TEE/TrustAnchorClaimer/TrustAnchorClaimer.csproj
           dotnet build TEE/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj
-
-      - name: Release
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        run: |
-          git config --global user.email "trustanchor@trustanchor.github.io"
-          git config --global user.name "trustanchor"
-          git checkout -b release
-          git add .
-          git commit -m 'release'
-          git push -f origin release
