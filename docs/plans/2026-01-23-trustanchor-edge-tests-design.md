@@ -1,3 +1,5 @@
+> Deprecated: superseded by `docs/plans/2026-01-24-trustanchor-onchain-voting-design.md` and `docs/plans/2026-01-24-trustanchor-onchain-voting-implementation.md`.
+
 # TrustAnchor Edge Tests Design
 
 ## Goal
