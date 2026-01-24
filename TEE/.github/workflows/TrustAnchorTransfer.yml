@@ -1,4 +1,4 @@
-name: BurgerTransfer
+name: TrustAnchorTransfer
 on: 
   workflow_dispatch:
     inputs:
@@ -26,7 +26,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Run Claimer
-      run: echo ${{ secrets.CONFIG_MAINNET }} | dotnet run --project BurgerTransfer
+      run: echo ${{ secrets.CONFIG_MAINNET }} | dotnet run --project TrustAnchorTransfer
       env:
         WIF: ${{ secrets.TEEWIF }}
         RPC: https://n3seed1.ngd.network:10332

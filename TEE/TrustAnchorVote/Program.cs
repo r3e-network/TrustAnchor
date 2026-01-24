@@ -10,7 +10,7 @@ using LibRPC;
 using LibWallet;
 using Neo.Cryptography.ECC;
 
-namespace BurgerVote
+namespace TrustAnchorVote
 {
     class Program
     {

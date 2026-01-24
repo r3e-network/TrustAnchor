@@ -1,2 +1,2 @@
 # TEE
-neoburger trusted execution environment on github
+TrustAnchor trusted execution environment on github

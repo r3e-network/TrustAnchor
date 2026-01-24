@@ -15,76 +15,76 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
-    - name: Build BurgerNEO
+    - name: Build TrustAnchor
       run: |
-        mkdir BurgerNEO
-        cd BurgerNEO
+        mkdir TrustAnchor
+        cd TrustAnchor
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../BurgerNEO.cs > BurgerNEO.cs
+        sed "s/\[TODO\]: ARGS/${{ secrets.DEFAULTOWNER }}/g" ../TrustAnchor.cs > TrustAnchor.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
-    - name: Build NeoBurgerGovernanceToken
+    - name: Build TrustAnchorGovernanceToken
       run: |
-        mkdir NeoBurgerGovernanceToken
-        cd NeoBurgerGovernanceToken
+        mkdir TrustAnchorGovernanceToken
+        cd TrustAnchorGovernanceToken
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/0x82450b644631506b6b7194c4071d0b98d762771f/g" ../NeoBurgerGovernanceToken.cs > NeoBurgerGovernanceToken.cs
+        sed "s/\[TODO\]: ARGS/0x82450b644631506b6b7194c4071d0b98d762771f/g" ../TrustAnchorGovernanceToken.cs > TrustAnchorGovernanceToken.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
-    - name: Build BurgerAgent0
+    - name: Build TrustAnchorAgent0
       run: |
-        mkdir BurgerAgent0
-        cd BurgerAgent0
+        mkdir TrustAnchorAgent0
+        cd TrustAnchorAgent0
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent0.cs
+        sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../TrustAnchorAgent.cs > TrustAnchorAgent0.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
-    - name: Build BurgerAgent1
+    - name: Build TrustAnchorAgent1
       run: |
-        mkdir BurgerAgent1
-        cd BurgerAgent1
+        mkdir TrustAnchorAgent1
+        cd TrustAnchorAgent1
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent1.cs
+        sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../TrustAnchorAgent.cs > TrustAnchorAgent1.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
-    - name: Build BurgerAgent2
+    - name: Build TrustAnchorAgent2
       run: |
-        mkdir BurgerAgent2
-        cd BurgerAgent2
+        mkdir TrustAnchorAgent2
+        cd TrustAnchorAgent2
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent2.cs
+        sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../TrustAnchorAgent.cs > TrustAnchorAgent2.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
-    - name: Build BurgerAgent3
+    - name: Build TrustAnchorAgent3
       run: |
-        mkdir BurgerAgent3
-        cd BurgerAgent3
+        mkdir TrustAnchorAgent3
+        cd TrustAnchorAgent3
         dotnet new -i Neo3.SmartContract.Templates::1.5.0
         dotnet new neo3-contract
-        sed "s/\[TODO\]: ARGS/${{ secrets.BURGERNEO }}/g" ../BurgerAgent.cs > BurgerAgent3.cs
+        sed "s/\[TODO\]: ARGS/${{ secrets.TRUSTANCHOR }}/g" ../TrustAnchorAgent.cs > TrustAnchorAgent3.cs
         dotnet build
         mv bin/sc/* ./
         rm -rf bin
         rm -rf obj
     - name: Release
       run: |
-        git config --global user.email "neoburger@neoburger.github.io"
-        git config --global user.name "neoburger"
+        git config --global user.email "trustanchor@trustanchor.github.io"
+        git config --global user.name "trustanchor"
         git checkout -b release
         git add .
         git commit -m 'release'

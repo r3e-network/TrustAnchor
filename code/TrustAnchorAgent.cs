@@ -9,13 +9,13 @@ using Neo.SmartContract.Framework.Services;
 using Neo.SmartContract.Framework.Attributes;
 
 
-namespace NeoBurger
+namespace TrustAnchor
 {
-    [ManifestExtra("Author", "NEOBURGER")]
-    [ManifestExtra("Email", "developer@neo.org")]
-    [ManifestExtra("Description", "Agent Contract")]
+    [ManifestExtra("Author", "developer@r3e.network")]
+    [ManifestExtra("Email", "developer@r3e.network")]
+    [ManifestExtra("Description", "TrustAnchor Agent Contract")]
     [ContractPermission("*", "*")]
-    public class BurgerAgent : SmartContract
+    public class TrustAnchorAgent : SmartContract
     {
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 CORE = default;

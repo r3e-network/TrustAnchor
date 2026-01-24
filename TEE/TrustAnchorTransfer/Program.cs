@@ -10,7 +10,7 @@ using LibRPC;
 using LibWallet;
 using Neo.Cryptography.ECC;
 
-namespace BurgerTransfer
+namespace TrustAnchorTransfer
 {
     class Program
     {

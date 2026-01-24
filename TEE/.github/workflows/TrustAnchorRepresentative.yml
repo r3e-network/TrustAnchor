@@ -1,4 +1,4 @@
-name: BurgerClaimer
+name: TrustAnchorRepresentative
 on: 
   workflow_dispatch:
   
@@ -16,8 +16,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Run Claimer
-      run: echo ${{ secrets.CONFIG_MAINNET }} | dotnet run --project BurgerClaimer
+      run: echo ${{ secrets.CONFIG_MAINNET }} | dotnet run --project TrustAnchorRepresentative
       env:
-        WIF: ${{ secrets.TEEWIF }}
+        WIF: ${{ secrets.NBNODEWIF }}
         RPC: https://n3seed2.ngd.network:10332
         THREASHOLD: 17179869184

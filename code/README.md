@@ -1,17 +1,19 @@
 # code
-neoburger smart contracts
+TrustAnchor smart contracts (formerly NeoBurger)
 
 ## notice
 
-NeoBurger is a project from the very early age of neo3.
+TrustAnchor is a refactored version of NeoBurger, a project from the very early age of neo3.
 
 The compiler and toolkits at that time were not developed well and were not compatible with the latest version.
 
-If you want to know how neoburger's code is compiled, view [Github Workflow YML file](.github/workflows/dotnet.yml).
+If you want to know how the code is compiled, view [Github Workflow YML file](.github/workflows/dotnet.yml).
 
 Due to the limitations of the toolkits at that time, this code used some tricky skills, so it is **NOT** recommended that the new version of the compiler restore its compatibility.
 
-In order to keep consistency with the running smart contract code of NeoBurger on the mainnet, the code will not be switched to the new version of the compiler for the time being.
+## Historical Registry (NeoBurger)
+
+The following contracts were deployed as NeoBurger on the mainnet. TrustAnchor is a rebranding/refactoring of this codebase.
 
 ## registry
 
