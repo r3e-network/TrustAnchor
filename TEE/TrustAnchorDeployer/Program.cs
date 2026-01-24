@@ -1,250 +1,225 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Numerics;
+using LibHelper;
+using LibRPC;
+using Neo;
+using Neo.Network.P2P.Payloads;
+using Neo.SmartContract;
+using Neo.SmartContract.Native;
+using Neo.VM;
+using Neo.Wallets;
 
 namespace TrustAnchorDeployer
 {
-    static class Program
+    class Program
     {
+        public static readonly string WIF = Environment.GetEnvironmentVariable("WIF");
+        private static readonly string OWNER_HASH = Environment.GetEnvironmentVariable("OWNER_HASH");
+        private static readonly string CONTRACTS_DIR = Environment.GetEnvironmentVariable("CONTRACTS_DIR") ?? "../../contract";
+        private static readonly uint MAXAGENTS = 21;
+
+        public static readonly KeyPair keypair = Neo.Network.RPC.Utility.GetKeyPair(WIF);
+        private static readonly UInt160 deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
+        public static readonly Signer[] signers = new[] { new Signer { Scopes = WitnessScope.CalledByEntry, Account = deployer } };
+
         static void Main(string[] args)
         {
-            Console.WriteLine("=== TrustAnchor Deployment Script Generator ===");
-            Console.WriteLine();
+            $"=== TrustAnchor Deployment Tool ===".Log();
+            $"Deployer: {deployer}".Log();
+            $"Owner: {OWNER_HASH}".Log();
+            $"Contracts: {CONTRACTS_DIR}".Log();
 
-            var ownerHash = Environment.GetEnvironmentVariable("OWNER_HASH");
-            if (string.IsNullOrEmpty(ownerHash))
+            // Step 1: Deploy TrustAnchor contract
+            UInt160 trustAnchorHash = DeployTrustAnchor();
+            $"TrustAnchor deployed: {trustAnchorHash}".Log();
+
+            // Step 2: Deploy 21 Agent contracts
+            var agentHashes = DeployAgents(trustAnchorHash);
+            $"Deployed {agentHashes.Count} Agent contracts".Log();
+
+            // Step 3: Register all agents
+            RegisterAgents(trustAnchorHash, agentHashes);
+            $"All agents registered".Log();
+
+            // Step 4: Initial configuration
+            ConfigureInitialSetup(trustAnchorHash);
+            $"Initial configuration complete".Log();
+
+            $"=== Deployment Summary ===".Log();
+            $"TrustAnchor: {trustAnchorHash}".Log();
+            for (int i = 0; i < agentHashes.Count; i++)
             {
-                Console.WriteLine("Error: OWNER_HASH environment variable is required");
-                Console.WriteLine("Usage: OWNER_HASH=<your_hash> dotnet run");
-                return;
+                $"Agent {i}: {agentHashes[i]}".Log();
+            }
+        }
+
+        static UInt160 DeployTrustAnchor()
+        {
+            $"Step 1: Deploying TrustAnchor contract...".Log();
+
+            // Compile contract and get NEF file
+            var (nefPath, nefBytes, scriptHash) = CompileContract("TrustAnchor.cs", "TrustAnchor", OWNER_HASH);
+            var manifestJson = File.ReadAllText(nefPath.Replace(".nef", ".manifest.json"));
+
+            // Create deployment script using EmitDynamicCall
+            var script = new ScriptBuilder();
+            script.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefBytes, System.Text.Encoding.UTF8.GetBytes(manifestJson));
+
+            var scriptBytes = script.ToArray();
+            var txHash = scriptBytes.SendTx();
+
+            $"Deployed with TX: {txHash}".Log();
+            return scriptHash;
+        }
+
+        static System.Collections.Generic.List<UInt160> DeployAgents(UInt160 trustAnchorHash)
+        {
+            $"\nStep 2: Deploying {MAXAGENTS} Agent contracts...".Log();
+
+            var agentHashes = new System.Collections.Generic.List<UInt160>();
+
+            for (uint i = 0; i < MAXAGENTS; i++)
+            {
+                $"Deploying Agent {i}/{MAXAGENTS}...".Log();
+
+                // Compile Agent contract with TrustAnchor hash
+                var (nefPath, nefBytes, scriptHash) = CompileContract("TrustAnchorAgent.cs", $"TrustAnchorAgent{i}", trustAnchorHash.ToString());
+                var manifestJson = File.ReadAllText(nefPath.Replace(".nef", ".manifest.json"));
+                agentHashes.Add(scriptHash);
+
+                // Create deployment script using EmitDynamicCall
+                var script = new ScriptBuilder();
+                script.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nefBytes, System.Text.Encoding.UTF8.GetBytes(manifestJson));
+
+                var scriptBytes = script.ToArray();
+                var txHash = scriptBytes.SendTx();
+
+                $"Agent {i} deployed: {scriptHash}, TX: {txHash}".Log();
             }
 
-            var outputDir = Path.Combine("output", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
-            Directory.CreateDirectory(outputDir);
-            Console.WriteLine($"Output directory: {outputDir}");
-
-            // Generate TrustAnchor deployment scripts
-            GenerateTrustAnchorDeployment(ownerHash, outputDir);
-
-            // Generate Agent deployment scripts
-            GenerateAgentDeployment(outputDir);
-
-            // Generate registration scripts
-            GenerateRegistrationScripts(ownerHash, outputDir);
-
-            // Generate configuration script
-            GenerateConfigurationScript(ownerHash, outputDir);
-
-            Console.WriteLine("\n=== Deployment Scripts Generated ===");
-            Console.WriteLine($"Location: {outputDir}/");
-            Console.WriteLine("\nNext steps:");
-            Console.WriteLine("1. Review generated scripts in the output directory");
-            Console.WriteLine("2. Execute scripts in order:");
-            Console.WriteLine("   1_deploy_trustanchor.sh");
-            Console.WriteLine("   2_deploy_agents.sh");
-            Console.WriteLine("   3_register_agents.sh");
-            Console.WriteLine("   4_initial_config.sh");
+            return agentHashes;
         }
 
-        static void GenerateTrustAnchorDeployment(string ownerHash, string outputDir)
+        static void RegisterAgents(UInt160 trustAnchorHash, System.Collections.Generic.List<UInt160> agentHashes)
         {
-            Console.WriteLine("Generating TrustAnchor deployment script...");
+            $"\nStep 3: Registering agents...".Log();
 
-            var script = $"#!/usr/bin/env bash\n" +
-                $"set -euo pipefail\n\n" +
-                $"echo \"Deploying TrustAnchor contract...\"\n" +
-                $"OWNER_HASH=\"{ownerHash}\"\n\n" +
-                $"# Compile contract\n" +
-                $"sourcePath=\"contract/TrustAnchor.cs\"\n" +
-                $"tempDir=\"build/trustanchor\"\n" +
-                $"mkdir -p \"$tempDir\"\n\n" +
-                $"# Replace [TODO]: ARGS with owner hash\n" +
-                $"sed \"s/\\\\[TODO\\\\]: ARGS/$OWNER_HASH/g\" \"$sourcePath\" > \"$tempDir/TrustAnchor.cs\"\n\n" +
-                $"# Compile with nccs\n" +
-                $"nccs build \"$tempDir\" -o \"$tempDir\" || {{ echo \"Compilation failed\"; exit 1; }}\n\n" +
-                $"echo \"TrustAnchor compiled successfully\"\n" +
-                $"echo \"NEF: $tempDir/TrustAnchor.nef\"\n" +
-                $"echo \"Manifest: $tempDir/TrustAnchor.manifest.json\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Contract hash can be found by running:\"\n" +
-                $"echo \"  neo-cli contract hash $tempDir/TrustAnchor.nef\"\n";
+            for (uint i = 0; i < agentHashes.Count; i++)
+            {
+                $"Registering Agent {i}...".Log();
 
-            File.WriteAllText(Path.Combine(outputDir, "1_deploy_trustanchor.sh"), script);
-            Console.WriteLine("  Created: 1_deploy_trustanchor.sh");
+                var script = new ScriptBuilder();
+                script.EmitDynamicCall(trustAnchorHash, "setAgent", i, agentHashes[(int)i]);
+
+                var scriptBytes = script.ToArray();
+                var txHash = scriptBytes.SendTx();
+
+                $"Agent {i} registered, TX: {txHash}".Log();
+            }
         }
 
-        static void GenerateAgentDeployment(string outputDir)
+        static void ConfigureInitialSetup(UInt160 trustAnchorHash)
         {
-            Console.WriteLine("Generating Agent deployment scripts...");
+            $"\nStep 4: Initial configuration...".Log();
 
-            var script = $"#!/usr/bin/env bash\n" +
-                $"set -euo pipefail\n\n" +
-                $"echo \"Deploying 21 Agent contracts...\"\n\n" +
-                $"TRUSTANCHOR_HASH=\"$1\"  # Passed as argument\n" +
-                $"sourcePath=\"contract/TrustAnchorAgent.cs\"\n" +
-                $"outputDir=\"build/agents\"\n" +
-                $"mkdir -p \"$outputDir\"\n\n" +
-                $"for i in {{0..20}}\n" +
-                $"do\n" +
-                $"  echo \"Deploying Agent $i...\"\n" +
-                $"  tempDir=\"build/agent$i\"\n" +
-                $"  mkdir -p \"$tempDir\"\n\n" +
-                $"  # Replace [TODO]: ARGS with TrustAnchor hash\n" +
-                $"  sed \"s/\\\\[TODO\\\\]: ARGS/$TRUSTANCHOR_HASH/g\" \"$sourcePath\" > \"$tempDir/TrustAnchorAgent.cs\"\n\n" +
-                $"  # Compile\n" +
-                $"  nccs build \"$tempDir\" -o \"$tempDir\" || {{ echo \"Compilation failed\"; exit 1; }}\n\n" +
-                $"  echo \"Agent $i compiled:\"\n" +
-                $"  echo \"  NEF: $tempDir/TrustAnchorAgent.nef\"\n" +
-                $"  echo \"  Manifest: $tempDir/TrustAnchorAgent.manifest.json\"\n" +
-                $"  echo \"\"\n" +
-                $"  # Get contract hash\n" +
-                $"  agentHash=$(neo-cli contract hash \"$tempDir/TrustAnchorAgent.nef\")\n" +
-                $"  echo \"Agent $i hash: $agentHash\"\n" +
-                $"  echo \"$agentHash\" > \"$outputDir/agent_$i.hash\"\n" +
-                $"done\n" +
-                $"echo \"All 21 agents deployed\"\n" +
-                $"echo \"Agent hashes saved to $outputDir/agent_*.hash\"\n" +
-                $"echo \"\"\n" +
-                $"cat \"$outputDir\"/agent_*.hash\n" +
-                $"cat \"$outputDir\"/agent_*.hash > \"$outputDir/all_agents.txt\"\n" +
-                $"echo \"All agent hashes saved to $outputDir/all_agents.txt\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"IMPORTANT: Save these hashes for the registration step\"\n" +
-                $"echo \"Note: Deploy 21 agent contracts even if you only need a subset initially\"\n";
+            // Begin config
+            $"Beginning configuration...".Log();
+            var script = new ScriptBuilder();
+            script.EmitDynamicCall(trustAnchorHash, "beginConfig");
+            script.ToArray().SendTx();
 
-            File.WriteAllText(Path.Combine(outputDir, "2_deploy_agents.sh"), script);
-            Console.WriteLine("  Created: 2_deploy_agents.sh");
+            // Set all 21 agents with weight 1 each (temporary equal distribution)
+            $"Setting agent weights to 1 each...".Log();
+            for (uint i = 0; i < MAXAGENTS; i++)
+            {
+                // Generate dummy target (placeholder, will be configured later)
+                var dummyTarget = new byte[33]; // 33 bytes for compressed ECPoint
+                dummyTarget[32] = 0x02; // Even y coordinate
+
+                var weight = BigInteger.One;
+
+                var setConfigScript = new ScriptBuilder();
+                setConfigScript.EmitDynamicCall(trustAnchorHash, "setAgentConfig", i, dummyTarget, weight);
+
+                setConfigScript.ToArray().SendTx();
+            }
+
+            // Finalize config
+            $"Finalizing configuration...".Log();
+            var finalizeScript = new ScriptBuilder();
+            finalizeScript.EmitDynamicCall(trustAnchorHash, "finalizeConfig");
+            finalizeScript.ToArray().SendTx();
+
+            $"Initial config complete".Log();
         }
 
-        static void GenerateRegistrationScripts(string ownerHash, string outputDir)
+        static (string nefPath, byte[] nefBytes, UInt160 scriptHash) CompileContract(string sourceFileName, string contractName, string argsHash)
         {
-            Console.WriteLine("Generating agent registration scripts...");
+            var sourcePath = Path.GetFullPath(Path.Combine(CONTRACTS_DIR, sourceFileName));
+            var source = File.ReadAllText(sourcePath);
+            source = source.Replace("[TODO]: ARGS", $"\"{argsHash}\"");
 
-            var script = $"#!/usr/bin/env bash\n" +
-                $"set -euo pipefail\n\n" +
-                $"TRUSTANCHOR_HASH=\"$1\"  # TrustAnchor contract hash\n" +
-                $"AGENT_HASHES_FILE=\"$2\"  # File containing agent hashes (one per line)\n" +
-                $"WIF=\"$3\"  # Wallet WIF for signing transactions\n\n" +
-                $"echo \"Registering agents with TrustAnchor contract...\"\n" +
-                $"echo \"TrustAnchor: $TRUSTANCHOR_HASH\"\n" +
-                $"echo \"\"\n" +
-                $"index=0\n" +
-                $"while IFS= read -r agentHash\n" +
-                $"do\n" +
-                $"  echo \"Registering Agent $index: $agentHash\"\n" +
-                $"  \n" +
-                $"  # Build setAgent invocation script\n" +
-                $"  # This would need to be done using neo-cli with proper wallet RPC\n" +
-                $"  neo-cli contract invoke \"$TRUSTANCHOR_HASH\" setAgent \\[\n" +
-                $"    index: $index,\\\n" +
-                $"    agent: $agentHash\\\n" +
-                $"  ] -- --wif \"$WIF\" --rpc-endpoint <your-rpc>\n" +
-                $"  \\\n" +
-                $"  ((index++))\n" +
-                $"done < \"$AGENT_HASHES_FILE\"\n" +
-                $"\\\n" +
-                $"echo \"All agents registered\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Verification:\"\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" agent --rpc-endpoint <your-rpc> --index 0\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" agent --rpc-endpoint <your-rpc> --index 1\n" +
-                $"# ... check all 21 agents\n" +
-                $"\\\n" +
-                $"echo \"Agents should all be registered and callable\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Note: You can verify agent registration by checking:\"\n" +
-                $"echo \"  neo-cli contract invoke \"$TRUSTANCHOR_HASH\" agent --index <0-20>\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Next: Run initial configuration to set up weights and targets\"\n" +
-                $"echo \"       ./4_initial_config.sh $TRUSTANCHOR_HASH\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"IMPORTANT: Before running initial_config.sh:\"\n" +
-                $"echo \"1. Ensure all 21 agents are registered\"\n" +
-                $"echo \"2. Fund the TrustAnchor contract with NEO (for testing)\"\n" +
-                $"echo \"3. Fund each agent contract with NEO (for testing)\"\n" +
-                $"echo \"4. Configure appropriate voting targets (ECPoint of candidates)\"\n" +
-                $"echo \"5. Set appropriate weights based on your distribution strategy\"\n";
+            // Write to temp file
+            var tempDir = Path.Combine(Path.GetTempPath(), contractName);
+            Directory.CreateDirectory(tempDir);
+            var tempSource = Path.Combine(tempDir, $"{contractName}.cs");
+            File.WriteAllText(tempSource, source);
 
-            File.WriteAllText(Path.Combine(outputDir, "3_register_agents.sh"), script);
-            Console.WriteLine("  Created: 3_register_agents.sh");
+            // Compile using nccs
+            var psi = new ProcessStartInfo
+            {
+                FileName = "nccs",
+                Arguments = $"build \"{tempDir}\" -o \"{tempDir}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false
+            };
+
+            using var process = Process.Start(psi);
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                throw new Exception($"Compilation failed: {error}{output}");
+            }
+
+            var nefPath = Path.Combine(tempDir, $"{contractName}.nef");
+            if (!File.Exists(nefPath))
+            {
+                throw new Exception($"NEF file not found: {nefPath}");
+            }
+
+            var nefBytes = File.ReadAllBytes(nefPath);
+
+            // Compute script hash from NEF bytes (skip header, use script portion)
+            // NEF file format: Magic(4) + Compiler(4) + Version(2) + ScriptLength(2) + Script(...) + Checksum(4)
+            int scriptOffset = 12; // 4+4+2+2
+            int scriptLength = BitConverter.ToUInt16(nefBytes, 10);
+            byte[] scriptBytes = new byte[scriptLength];
+            Array.Copy(nefBytes, scriptOffset, scriptBytes, 0, scriptLength);
+
+            // Use SHA256 to compute script hash
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hash = sha256.ComputeHash(scriptBytes);
+            var scriptHash = new UInt160(hash.Take(20).ToArray());
+
+            return (nefPath, nefBytes, scriptHash);
         }
+    }
 
-        static void GenerateConfigurationScript(string ownerHash, string outputDir)
+    // Extension methods
+    public static class Extensions
+    {
+        public static UInt256 SendTx(this byte[] script)
         {
-            Console.WriteLine("Generating initial configuration script...");
-
-            var script = $"#!/usr/bin/env bash\n" +
-                $"set -euo pipefail\n\n" +
-                $"TRUSTANCHOR_HASH=\"$1\"\n" +
-                $"WIF=\"$2\"\n" +
-                $"RPC_ENDPOINT=\"$3\"\n\n" +
-                $"echo \"Configuring TrustAnchor contract...\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Step 1: Begin configuration\"\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" beginConfig \\\n" +
-                $"  --wif \"$WIF\" --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Step 2: Configure agent targets and weights\"\n" +
-                $"echo \"IMPORTANT: Update the target addresses below with actual candidate ECPoints!\"\n" +
-                $"echo \"\"\n" +
-                $"# Example: Configure first 3 agents with equal weights\n" +
-                $"# You would replace the target bytes with actual ECPoint values\n" +
-                $"\\\n" +
-                $"# Agent 0: weight 7, target = [candidate 1 ECPOINT]\n" +
-                $"TARGET_0=\"0x\" # Replace with actual 33-byte ECPoint\n" +
-                $"WEIGHT_0=7\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" setAgentConfig \\[\n" +
-                $"  index: 0,\\\n" +
-                $"  target: $TARGET_0,\\\n" +
-                $"  weight: $WEIGHT_0\\\n" +
-                $"] \\\n" +
-                $"  --wif \"$WIF\" --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"\\\n" +
-                $"# Agent 1: weight 7, target = [candidate 2 ECPOINT]\n" +
-                $"TARGET_1=\"0x\" # Replace with actual 33-byte ECPoint\n" +
-                $"WEIGHT_1=7\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" setAgentConfig \\[\n" +
-                $"  index: 1,\\\n" +
-                $"  target: $TARGET_1,\\\n" +
-                $"  weight: $WEIGHT_1\\\n" +
-                $"] \\\n" +
-                $"  --wif \"$WIF\" --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"\\\n" +
-                $"# Continue for all 21 agents... weights must sum to 21\n" +
-                $"# You can use setAgentWeights to set all weights at once\n" +
-                $"\\\n" +
-                $"echo \"\"\n" +
-                $"echo \"Step 3: Finalize configuration\"\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" finalizeConfig \\ \n" +
-                $"  --wif \"$WIF\" --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Configuration complete!\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Verification:\" \n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" configVersion --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" agentTarget --index 0 --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"neo-cli contract invoke \"$TRUSTANCHOR_HASH\" agentWeight --index 0 --rpc-endpoint \"$RPC_ENDPOINT\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"IMPORTANT:\"\n" +
-                $"echo \"- After deployment, send NEO to TrustAnchor to enable staking\"\n" +
-                $"echo \"- Send NEO to each agent contract for voting power\"\n" +
-                $"echo \"- Configure voting targets with actual candidate addresses\"\n" +
-                $"echo \"- Weights must sum to 21 across all 21 agents\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Your contract is now live!\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"TrustAnchor: $TRUSTANCHOR_HASH\"\n" +
-                $"echo \"Owner: {ownerHash}\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"Next steps:\"" +
-                $"echo \"1. Fund TrustAnchor with NEO (users will stake to this contract)\n" +
-                $"echo \"2. Call RebalanceVotes to distribute NEO to agents\"\n" +
-                $"echo \"3. Agents will vote for configured targets and earn GAS\"\n" +
-                $"echo \"4. Use TrustAnchorClaimer/Representative to distribute GAS to stakers\"\n" +
-                $"echo \"\"\n" +
-                $"echo \"See TEE/README.md for operational tools documentation\"\n";
-
-            File.WriteAllText(Path.Combine(outputDir, "4_initial_config.sh"), script);
-            Console.WriteLine("  Created: 4_initial_config.sh");
+            var txMgr = script.TxMgr(Program.signers);
+            var signedTx = txMgr.AddSignature(Program.keypair).SignAsync().GetAwaiter().GetResult();
+            return signedTx.Send();
         }
     }
 }
