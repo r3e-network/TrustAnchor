@@ -18,7 +18,7 @@ namespace TrustAnchorRepresentative
         static void Main(string[] args)
         {
             UInt160 target = GetTarget();
-            UInt160 REPRESENTATIVE = UInt160.Parse("0x329aeff39c13550337f02296d5ffc82583acaba3");
+            UInt160 REPRESENTATIVE = GetRepresentative();
             BigInteger BLOCKNUM = NativeContract.Ledger.Hash.MakeScript("currentIndex").Call().Single().GetInteger();
             BigInteger GASBALANCE = NativeContract.GAS.Hash.MakeScript("balanceOf", new object[]{ REPRESENTATIVE }).Call().Single().GetInteger();
 
@@ -44,6 +44,16 @@ namespace TrustAnchorRepresentative
                 throw new InvalidOperationException("TARGET or TRUSTANCHOR env var is required.");
             }
             return UInt160.Parse(selected);
+        }
+
+        private static UInt160 GetRepresentative()
+        {
+            var repHash = Environment.GetEnvironmentVariable("REPRESENTATIVE");
+            if (string.IsNullOrWhiteSpace(repHash))
+            {
+                throw new InvalidOperationException("REPRESENTATIVE env var is required.");
+            }
+            return UInt160.Parse(repHash);
         }
     }
 }

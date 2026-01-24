@@ -1,17 +1,148 @@
-# TEE
-TrustAnchor trusted execution environment on github
+# TEE (Trusted Execution Environment)
 
-## TrustAnchor configuration
+Operational tools for managing TrustAnchor on NEO blockchain via GitHub Actions.
 
-The TEE tools now target the TrustAnchor core contract by default.
+## Overview
 
-Environment variables:
+The TEE tools automate operational tasks for TrustAnchor:
 
-- `TRUSTANCHOR`: TrustAnchor script hash (required).
+- **GAS Claiming** - Automatically claim GAS rewards from Agent contracts
+- **GAS Distribution** - Distribute collected GAS to contributors
+- **Key Generation** - Generate secure NEO wallets
 
-Voting configuration now happens on-chain:
+## Projects
 
-- `beginConfig`
-- `setAgentConfig`
-- `finalizeConfig`
-- `rebalanceVotes`
+### Core Tools
+
+| Project                       | Purpose                                      | Schedule      |
+| ----------------------------- | -------------------------------------------- | ------------- |
+| **TrustAnchorClaimer**        | Claims unclaimed GAS from 21 Agent contracts | Every 6 hours |
+| **TrustAnchorRepresentative** | Distributes GAS to contributors              | Every 6 hours |
+| **KeyGenerator**              | Generates NEO keypairs                       | Manual        |
+
+### Libraries
+
+| Library       | Purpose                                   |
+| ------------- | ----------------------------------------- |
+| **LibHelper** | Utility methods and extensions            |
+| **LibRPC**    | NEO RPC client wrapper                    |
+| **LibWallet** | Wallet operations and transaction signing |
+
+## Configuration
+
+### Required Environment Variables
+
+| Variable         | Used By                 | Description                            |
+| ---------------- | ----------------------- | -------------------------------------- |
+| `TRUSTANCHOR`    | Claimer, Representative | TrustAnchor contract script hash       |
+| `WIF`            | All                     | Wallet private key (WIF format)        |
+| `RPC`            | All                     | NEO RPC endpoint URL                   |
+| `THREASHOLD`     | Claimer, Representative | Minimum GAS amount to trigger action   |
+| `MOD`            | Claimer                 | Modulo for agent rotation (default: 1) |
+| `REPRESENTATIVE` | Representative          | Representative address holding GAS     |
+| `TARGET`         | Representative          | Target address to receive GAS          |
+
+### Example Configuration
+
+```yaml
+env:
+  TRUSTANCHOR: "0x1234...abcd" # Your TrustAnchor contract hash
+  WIF: ${{ secrets.TEEWIF }} # Encrypted wallet WIF
+  RPC: "https://n3seed2.ngd.network:10332"
+  THREASHOLD: "17179869184" # ~17 GAS
+  REPRESENTATIVE: "0xabcd...1234"
+  TARGET: "0x5678...efgh"
+```
+
+## GitHub Actions Workflows
+
+### TrustAnchorClaimer
+
+Runs every 6 hours to:
+
+1. Check Agent contracts for unclaimed GAS
+2. Call `sync()` on agents with significant unclaimed GAS
+3. Call `claim()` to collect GAS to Representative
+
+**Workflow**: `TEE/.github/workflows/TrustAnchorClaimer.yml`
+
+### TrustAnchorRepresentative
+
+Runs every 6 hours to:
+
+1. Check Representative GAS balance
+2. If above threshold, transfer GAS to TARGET
+3. Reserve ~1 GAS for transaction fees
+
+**Workflow**: `TEE/.github/workflows/TrustAnchorRepresentative.yml`
+
+### GenerateKey
+
+Manual workflow to:
+
+1. Generate new NEO keypair
+2. Encrypt WIF and store as GitHub secret
+3. Output public address
+
+**Workflow**: `TEE/.github/workflows/GenerateKey.yml`
+
+## Building Locally
+
+```bash
+# Build all projects
+cd TEE
+dotnet restore
+dotnet build
+
+# Run specific tool
+cd TrustAnchorClaimer
+export TRUSTANCHOR="0x..."
+export WIF="..."
+export RPC="https://..."
+export THREASHOLD="17179869184"
+dotnet run
+```
+
+## Target Framework
+
+- **.NET 10.0** - All TEE projects updated to .NET 10
+
+## Security Notes
+
+1. **Private Keys** - Never commit WIF keys to repository
+2. **Secrets** - Use GitHub Encrypted Secrets for sensitive data
+3. **Access Control** - Limit who can trigger workflows
+4. **Threshold** - Set appropriate thresholds to avoid dust transactions
+
+## Contract Integration
+
+TEE tools integrate with TrustAnchor contract methods:
+
+```csharp
+// Agent contract methods
+agent.sync()     // Trigger NEO.Vote() to claim GAS
+agent.claim()    // Transfer all GAS to caller
+
+// TrustAnchor contract methods
+trustAnchor.agent(index)  // Get agent address by index
+```
+
+## Troubleshooting
+
+### "nccs tool not found"
+
+- This error occurs in contract tests, not TEE tools
+- TEE tools don't require Neo compiler
+
+### "REPRESENTATIVE env var is required"
+
+- Add REPRESENTATIVE to workflow secrets or environment
+
+### Low GAS balance
+
+- Adjust THREASHOLD based on your network's GAS prices
+- Reserve at least 1 GAS for transaction fees
+
+## License
+
+Same as parent TrustAnchor project.
