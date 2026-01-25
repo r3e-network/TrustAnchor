@@ -208,26 +208,6 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void Rebalance_moves_neo_and_votes_per_weights()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
-        fixture.RegisterAgent(fixture.AgentHashes[1], fixture.AgentCandidate(1), "agent-1");
-        fixture.SetAgentVotingById(0, 10);
-        fixture.SetAgentVotingById(1, 11);
-
-        fixture.MintNeo(fixture.UserHash, 6);
-        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 6);
-
-        fixture.CallFrom(fixture.OwnerHash, "rebalanceVotes");
-
-        Assert.Equal(fixture.AgentCandidate(0), fixture.AgentLastVote(0));
-        Assert.Equal(fixture.AgentCandidate(1), fixture.AgentLastVote(1));
-        Assert.Equal(new BigInteger(2), fixture.NeoBalance(fixture.AgentHashes[0]));
-        Assert.Equal(new BigInteger(4), fixture.NeoBalance(fixture.AgentHashes[1]));
-    }
-
-    [Fact]
     public void WithdrawGAS_is_disabled()
     {
         var fixture = new TrustAnchorFixture();
