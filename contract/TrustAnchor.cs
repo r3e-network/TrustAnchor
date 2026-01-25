@@ -56,6 +56,9 @@ namespace TrustAnchor
         /// </remarks>
         private const byte PREFIXPAID = 0x06;
 
+        /// <summary>GAS received before any stake exists</summary>
+        private const byte PREFIXPENDINGREWARD = 0x07;
+
         /// <summary>User's staked NEO amount</summary>
         private const byte PREFIXSTAKE = 0x08;
 
@@ -198,26 +201,11 @@ namespace TrustAnchor
                 BigInteger ts = TotalStake();
                 if (ts > BigInteger.Zero)
                 {
-                    BigInteger rps = RPS();
-
-                    // Update RPS accumulator with overflow protection:
-                    // RPS += amount × 100% / totalStake
-                    //
-                    // This ensures:
-                    // 1. More GAS received = higher RPS
-                    // 2. More total stake = slower RPS growth (diluted)
-                    // 3. Each staker earns proportional to their stake × RPS increase
-                    //
-                    // Example: 100 GAS with 1000 NEO stake
-                    //   RPS += 100 × 100,000,000 / 1,000 = 10,000,000
-                    //   User with 100 NEO (10%) earns: 100 × 9,900,000 / 100,000,000 = 9.9
-                    //
-                    // SECURITY: Check for overflow in RPS calculation
-                    BigInteger rewardShare = amount * DEFAULTCLAIMREMAIN / ts;
-                    ExecutionEngine.Assert(rewardShare >= BigInteger.Zero);  // No overflow
-                    BigInteger newRps = rps + rewardShare;
-                    ExecutionEngine.Assert(newRps >= rps);  // Verify no overflow occurred
-                    Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED }, newRps);
+                    DistributeReward(amount, ts);
+                }
+                else
+                {
+                    AddPendingReward(amount);
                 }
             }
 
@@ -240,12 +228,24 @@ namespace TrustAnchor
                 BigInteger stakeAmount = amount;
                 StorageMap stakeMap = new(Storage.CurrentContext, PREFIXSTAKE);
                 BigInteger stake = (BigInteger)stakeMap.Get(from);
+                BigInteger previousTotalStake = TotalStake();
 
                 // Update user's stake
                 stakeMap.Put(from, stake + stakeAmount);
 
                 // Update total stake
-                Storage.Put(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE }, TotalStake() + stakeAmount);
+                BigInteger newTotalStake = previousTotalStake + stakeAmount;
+                Storage.Put(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE }, newTotalStake);
+
+                if (previousTotalStake == BigInteger.Zero)
+                {
+                    BigInteger pending = PendingReward();
+                    if (pending > BigInteger.Zero)
+                    {
+                        DistributeReward(pending, newTotalStake);
+                        Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGREWARD });
+                    }
+                }
 
                 // Route NEO to the agent with highest weight
                 // This ensures voting power is distributed according to configured weights
@@ -942,6 +942,42 @@ namespace TrustAnchor
         // ========================================
         // Helper Methods
         // ========================================
+
+        private static BigInteger PendingReward()
+        {
+            return (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGREWARD });
+        }
+
+        private static void AddPendingReward(BigInteger amount)
+        {
+            BigInteger pending = PendingReward();
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXPENDINGREWARD }, pending + amount);
+        }
+
+        private static void DistributeReward(BigInteger amount, BigInteger totalStake)
+        {
+            ExecutionEngine.Assert(totalStake > BigInteger.Zero);
+            BigInteger rps = RPS();
+
+            // Update RPS accumulator with overflow protection:
+            // RPS += amount × 100% / totalStake
+            //
+            // This ensures:
+            // 1. More GAS received = higher RPS
+            // 2. More total stake = slower RPS growth (diluted)
+            // 3. Each staker earns proportional to their stake × RPS increase
+            //
+            // Example: 100 GAS with 1000 NEO stake
+            //   RPS += 100 × 100,000,000 / 1,000 = 10,000,000
+            //   User with 100 NEO (10%) earns: 100 × 9,900,000 / 100,000,000 = 9.9
+            //
+            // SECURITY: Check for overflow in RPS calculation
+            BigInteger rewardShare = amount * DEFAULTCLAIMREMAIN / totalStake;
+            ExecutionEngine.Assert(rewardShare >= BigInteger.Zero);  // No overflow
+            BigInteger newRps = rps + rewardShare;
+            ExecutionEngine.Assert(newRps >= rps);  // Verify no overflow occurred
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED }, newRps);
+        }
 
         private static bool IsPendingConfigActive()
         {

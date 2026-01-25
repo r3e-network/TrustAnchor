@@ -108,6 +108,29 @@ public class TrustAnchorTests
     }
 
     [Fact]
+    public void Gas_before_first_stake_is_distributed_on_first_stake()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.SetAllAgents();
+        fixture.BeginConfig();
+        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
+        fixture.SetRemainingAgentConfigs(1, weight: 0);
+        fixture.FinalizeConfig();
+
+        fixture.MintGas(fixture.OtherHash, 10);
+        fixture.GasTransfer(fixture.OtherHash, fixture.TrustHash, 5);
+
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
+
+        var before = fixture.GasBalance(fixture.UserHash);
+        fixture.CallFrom(fixture.UserHash, "claimReward", fixture.UserHash);
+        var after = fixture.GasBalance(fixture.UserHash);
+
+        Assert.Equal(before + new BigInteger(5), after);
+    }
+
+    [Fact]
     public void Withdraw_reduces_stake_and_transfers_neo_from_agent()
     {
         var fixture = new TrustAnchorFixture();
