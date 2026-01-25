@@ -33,7 +33,7 @@ namespace TrustAnchor
 
         /// <summary>RPS (Reward Per Stake) accumulator - tracks cumulative reward per token over time</summary>
         /// <remarks>
-        /// Formula: RPS = Σ(GAS_received × 99% / totalStake)
+        /// Formula: RPS = Σ(GAS_received × 100% / totalStake)
         /// Units: reward units per NEO (scaled by RPS_SCALE = 100,000,000)
         ///
         /// This global counter increases whenever GAS is received, proportional to:
@@ -41,7 +41,7 @@ namespace TrustAnchor
         /// - GAS amount received
         ///
         /// Example: 100 GAS received with 1000 NEO total stake
-        ///   RPS += 100 × 99,000,000 / 1000 = 9,900,000
+        ///   RPS += 100 × 100,000,000 / 1000 = 10,000,000
         /// </remarks>
         private const byte PREFIXREWARDPERTOKENSTORED = 0x04;
 
@@ -98,8 +98,8 @@ namespace TrustAnchor
         /// <summary>Scale factor for reward calculations (8 decimal places)</summary>
         private static readonly BigInteger RPS_SCALE = 100000000;
 
-        /// <summary>99% of GAS goes to stakers, 1% reserved for contract operations</summary>
-        private static readonly BigInteger DEFAULTCLAIMREMAIN = 99000000;
+        /// <summary>100% of GAS goes to stakers, no fees</summary>
+        private static readonly BigInteger DEFAULTCLAIMREMAIN = 100000000;
 
         /// <summary>3 day delay for owner transfer (security mechanism)</summary>
         private static readonly BigInteger OWNER_CHANGE_DELAY = 3 * 24 * 3600;
@@ -198,7 +198,7 @@ namespace TrustAnchor
                     BigInteger rps = RPS();
 
                     // Update RPS accumulator with overflow protection:
-                    // RPS += amount × 99% / totalStake
+                    // RPS += amount × 100% / totalStake
                     //
                     // This ensures:
                     // 1. More GAS received = higher RPS
@@ -206,7 +206,7 @@ namespace TrustAnchor
                     // 3. Each staker earns proportional to their stake × RPS increase
                     //
                     // Example: 100 GAS with 1000 NEO stake
-                    //   RPS += 100 × 99,000,000 / 1,000 = 9,900,000
+                    //   RPS += 100 × 100,000,000 / 1,000 = 10,000,000
                     //   User with 100 NEO (10%) earns: 100 × 9,900,000 / 100,000,000 = 9.9
                     //
                     // SECURITY: Check for overflow in RPS calculation
@@ -276,11 +276,11 @@ namespace TrustAnchor
         ///                              = (Σ s_i) × ΔR / SCALE
         ///                              = TotalStake × ΔR / SCALE
         ///
-        /// But ΔR = GAS × 99% / TotalStake, so:
-        /// Σ(reward_increase) = TotalStake × (GAS × 99% / TotalStake) / SCALE
-        ///                   = GAS × 99% / SCALE
+        /// But ΔR = GAS × 100% / TotalStake, so:
+        /// Σ(reward_increase) = TotalStake × (GAS × 100% / TotalStake) / SCALE
+        ///                   = GAS × 100% / SCALE
         ///
-        /// This proves: Σ user rewards = 99% of GAS received
+        /// This proves: Σ user rewards = 100% of GAS received
         /// No user can earn more than their fair share!
         /// </summary>
         /// <param name="account">User address to sync</param>
