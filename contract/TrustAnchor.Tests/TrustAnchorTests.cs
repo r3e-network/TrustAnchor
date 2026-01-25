@@ -216,4 +216,33 @@ public class TrustAnchorTests
         fixture.CallFrom(fixture.OwnerHash, "pause");
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1)));
     }
+
+    [Fact]
+    public void RegisterAgent_enforces_name_length_and_uniqueness()
+    {
+        var fixture = new TrustAnchorFixture();
+        var agent0 = fixture.AgentHashes[0];
+        var agent1 = fixture.AgentHashes[1];
+        var target0 = fixture.AgentCandidate(0);
+        var target1 = fixture.AgentCandidate(1);
+
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", agent0, target0, "agent-0");
+
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "registerAgent", agent1, target1, "agent-0"));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "registerAgent", agent1, target0, "agent-1"));
+
+        var longName = new string('a', 33);
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "registerAgent", agent1, target1, longName));
+    }
+
+    [Fact]
+    public void UpdateAgentName_and_target_enforce_uniqueness()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[0], fixture.AgentCandidate(0), "a0");
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[1], fixture.AgentCandidate(1), "a1");
+
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "updateAgentNameById", 1, "a0"));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "updateAgentTargetById", 1, fixture.AgentCandidate(0)));
+    }
 }

@@ -65,6 +65,24 @@ namespace TrustAnchor
         /// <summary>Total staked NEO across all users</summary>
         private const byte PREFIXTOTALSTAKE = 0x09;
 
+        /// <summary>Number of registered agents</summary>
+        private const byte PREFIXAGENT_COUNT = 0x13;
+
+        /// <summary>Agent voting target ECPoint (index -> target)</summary>
+        private const byte PREFIXAGENT_TARGET = 0x14;
+
+        /// <summary>Agent display name (index -> name)</summary>
+        private const byte PREFIXAGENT_NAME = 0x15;
+
+        /// <summary>Agent voting amount (priority only)</summary>
+        private const byte PREFIXAGENT_VOTING = 0x16;
+
+        /// <summary>Name to agent index mapping</summary>
+        private const byte PREFIX_NAME_TO_ID = 0x18;
+
+        /// <summary>Target to agent index mapping</summary>
+        private const byte PREFIX_TARGET_TO_ID = 0x19;
+
         // ========================================
         // Configuration Storage Prefixes
         // ========================================
@@ -120,6 +138,13 @@ namespace TrustAnchor
         /// <summary>Get agent contract address by index</summary>
         public static UInt160 Agent(BigInteger i) => (UInt160)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
 
+        /// <summary>Get number of registered agents</summary>
+        public static BigInteger AgentCount()
+        {
+            var stored = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXAGENT_COUNT });
+            return stored is null ? BigInteger.Zero : (BigInteger)stored;
+        }
+
         /// <summary>Get current config version</summary>
         public static BigInteger ConfigVersion() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXCONFIGVERSION });
 
@@ -145,26 +170,27 @@ namespace TrustAnchor
             return (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
         }
 
-        /// <summary>Get agent's voting target address from active config</summary>
-        /// <param name="index">Agent index (0-20)</param>
+        /// <summary>Get agent's voting target address by index</summary>
+        /// <param name="index">Agent index</param>
         /// <returns>ECPoint of the candidate this agent votes for</returns>
         public static ECPoint AgentTarget(BigInteger index)
         {
-            var mapKey = (ByteString)index;
-            var configMap = new StorageMap(Storage.CurrentContext, PREFIXAGENTCONFIG);
-            var data = (ByteString)configMap.Get(mapKey);
-            return DeserializeAgentConfig_GetTarget((byte[])(object)data);
+            var data = (ByteString)new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET).Get((ByteString)index);
+            return data is null ? default : (ECPoint)(byte[])data;
         }
 
-        /// <summary>Get agent's voting weight from active config</summary>
-        /// <param name="index">Agent index (0-20)</param>
-        /// <returns>Weight value for this agent</returns>
-        public static BigInteger AgentWeight(BigInteger index)
+        /// <summary>Get agent name by index</summary>
+        public static string AgentName(BigInteger index)
         {
-            var mapKey = (ByteString)index;
-            var configMap = new StorageMap(Storage.CurrentContext, PREFIXAGENTCONFIG);
-            var data = (ByteString)configMap.Get(mapKey);
-            return DeserializeAgentConfig_GetWeight((byte[])(object)data);
+            var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_NAME).Get((ByteString)index);
+            return data is null ? string.Empty : (string)data;
+        }
+
+        /// <summary>Get agent voting amount (priority only)</summary>
+        public static BigInteger AgentVoting(BigInteger index)
+        {
+            var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Get((ByteString)index);
+            return data is null ? BigInteger.Zero : (BigInteger)data;
         }
 
         // ========================================
@@ -477,6 +503,109 @@ namespace TrustAnchor
             // This bypasses agent contracts since they are all empty
             // User gets their NEO back, though this is a rare emergency scenario
             ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, account, stake));
+        }
+
+        // ========================================
+        // Agent Registry
+        // ========================================
+
+        /// <summary>Register a new agent contract with target and name</summary>
+        public static void RegisterAgent(UInt160 agent, ECPoint target, string name)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(agent != UInt160.Zero);
+
+            ExecutionEngine.Assert(!string.IsNullOrEmpty(name));
+            ExecutionEngine.Assert(Utf8Length(name) <= 32);
+
+            var targetBytes = (byte[])(object)target;
+            ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33);
+
+            var nameToId = new StorageMap(Storage.CurrentContext, PREFIX_NAME_TO_ID);
+            ExecutionEngine.Assert(nameToId.Get(name) is null, "Name already registered");
+
+            var targetKey = (ByteString)targetBytes;
+            var targetToId = new StorageMap(Storage.CurrentContext, PREFIX_TARGET_TO_ID);
+            ExecutionEngine.Assert(targetToId.Get(targetKey) is null, "Target already registered");
+
+            var count = AgentCount();
+            ExecutionEngine.Assert(count < MAXAGENTS_BIG, "Maximum 21 agents");
+
+            var key = (ByteString)count;
+            new StorageMap(Storage.CurrentContext, PREFIXAGENT).Put(key, agent);
+            new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET).Put(key, targetKey);
+            new StorageMap(Storage.CurrentContext, PREFIXAGENT_NAME).Put(key, name);
+            new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Put(key, BigInteger.Zero);
+
+            nameToId.Put(name, count);
+            targetToId.Put(targetKey, count);
+
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXAGENT_COUNT }, count + 1);
+        }
+
+        /// <summary>Update agent target by index</summary>
+        public static void UpdateAgentTargetById(BigInteger index, ECPoint target)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(index >= 0 && index < AgentCount());
+
+            var targetBytes = (byte[])(object)target;
+            ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33);
+
+            var targetKey = (ByteString)targetBytes;
+            var targetToId = new StorageMap(Storage.CurrentContext, PREFIX_TARGET_TO_ID);
+            var existing = targetToId.Get(targetKey);
+            if (existing is not null)
+            {
+                ExecutionEngine.Assert((BigInteger)existing == index, "Target already registered");
+            }
+
+            var targetMap = new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET);
+            var current = (ByteString)targetMap.Get((ByteString)index);
+            if (current is not null && current != targetKey)
+            {
+                targetToId.Delete(current);
+            }
+
+            targetMap.Put((ByteString)index, targetKey);
+            targetToId.Put(targetKey, index);
+        }
+
+        /// <summary>Update agent name by index</summary>
+        public static void UpdateAgentNameById(BigInteger index, string name)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(index >= 0 && index < AgentCount());
+
+            ExecutionEngine.Assert(!string.IsNullOrEmpty(name));
+            ExecutionEngine.Assert(Utf8Length(name) <= 32);
+
+            var nameToId = new StorageMap(Storage.CurrentContext, PREFIX_NAME_TO_ID);
+            var existing = nameToId.Get(name);
+            if (existing is not null)
+            {
+                ExecutionEngine.Assert((BigInteger)existing == index, "Name already registered");
+            }
+
+            var nameMap = new StorageMap(Storage.CurrentContext, PREFIXAGENT_NAME);
+            var current = nameMap.Get((ByteString)index);
+            if (current is not null && (string)current != name)
+            {
+                nameToId.Delete(current);
+            }
+
+            nameMap.Put((ByteString)index, name);
+            nameToId.Put(name, index);
+        }
+
+        /// <summary>Set agent voting amount by index (priority only)</summary>
+        public static void SetAgentVotingById(BigInteger index, BigInteger amount)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(index >= 0 && index < AgentCount());
+            ExecutionEngine.Assert(amount >= BigInteger.Zero);
+
+            new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Put((ByteString)index, amount);
         }
 
         // ========================================
@@ -977,6 +1106,40 @@ namespace TrustAnchor
             BigInteger newRps = rps + rewardShare;
             ExecutionEngine.Assert(newRps >= rps);  // Verify no overflow occurred
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED }, newRps);
+        }
+
+        private static int Utf8Length(string value)
+        {
+            int total = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                int ch = value[i];
+                if (ch < 0x80)
+                {
+                    total += 1;
+                    continue;
+                }
+
+                if (ch < 0x800)
+                {
+                    total += 2;
+                    continue;
+                }
+
+                if (ch >= 0xD800 && ch <= 0xDBFF)
+                {
+                    ExecutionEngine.Assert(i + 1 < value.Length, "Invalid UTF-16");
+                    int low = value[i + 1];
+                    ExecutionEngine.Assert(low >= 0xDC00 && low <= 0xDFFF, "Invalid UTF-16");
+                    total += 4;
+                    i++;
+                    continue;
+                }
+
+                ExecutionEngine.Assert(!(ch >= 0xDC00 && ch <= 0xDFFF), "Invalid UTF-16");
+                total += 3;
+            }
+            return total;
         }
 
         private static bool IsPendingConfigActive()
