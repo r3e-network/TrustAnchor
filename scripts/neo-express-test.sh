@@ -132,58 +132,34 @@ for i in $(seq 0 20); do
   if [[ "${i}" -eq 1 ]]; then
     agent_hash="${AGENT2_HASH}"
   fi
-  cat > "${INVOKE_DIR}/setagent-${i}.json" <<EOF
-{
-  "contract": "${TRUST_HASH}",
-  "operation": "setAgent",
-  "args": [
-    {"type": "Integer", "value": "${i}"},
-    {"type": "Hash160", "value": "${agent_hash}"}
-  ]
-}
-EOF
-  invoke_tx "${INVOKE_DIR}/setagent-${i}.json" dev
-done
-
-sleep 2
-
-cat > "${INVOKE_DIR}/beginconfig.json" <<EOF
-{
-  "contract": "${TRUST_HASH}",
-  "operation": "beginConfig",
-  "args": []
-}
-EOF
-invoke_tx "${INVOKE_DIR}/beginconfig.json" dev
-
-for i in $(seq 0 20); do
-  weight="0"
-  if [[ "${i}" -eq 0 ]]; then
-    weight="21"
-  fi
+  name="agent-${i}"
   pubkey="${CANDIDATE_PUBKEYS[$i]}"
-  cat > "${INVOKE_DIR}/setagentconfig-${i}.json" <<EOF
+  cat > "${INVOKE_DIR}/register-agent-${i}.json" <<EOF
 {
   "contract": "${TRUST_HASH}",
-  "operation": "setAgentConfig",
+  "operation": "registerAgent",
   "args": [
-    {"type": "Integer", "value": "${i}"},
+    {"type": "Hash160", "value": "${agent_hash}"},
     {"type": "PublicKey", "value": "${pubkey}"},
-    {"type": "Integer", "value": "${weight}"}
+    {"type": "String", "value": "${name}"}
   ]
 }
 EOF
-  invoke_tx "${INVOKE_DIR}/setagentconfig-${i}.json" dev
+  invoke_tx "${INVOKE_DIR}/register-agent-${i}.json" dev
+  sleep 1
 done
 
-cat > "${INVOKE_DIR}/finalizeconfig.json" <<EOF
+cat > "${INVOKE_DIR}/set-agent-voting.json" <<EOF
 {
   "contract": "${TRUST_HASH}",
-  "operation": "finalizeConfig",
-  "args": []
+  "operation": "setAgentVotingById",
+  "args": [
+    {"type": "Integer", "value": "0"},
+    {"type": "Integer", "value": "1"}
+  ]
 }
 EOF
-invoke_tx "${INVOKE_DIR}/finalizeconfig.json" dev
+invoke_tx "${INVOKE_DIR}/set-agent-voting.json" dev
 
 cat > "${INVOKE_DIR}/neo-transfer.json" <<EOF
 {
@@ -249,7 +225,7 @@ EOF
 sleep 2
 total_stake=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/totalstake.json" dev | jq -r '.stack[0].value')
 stake_of=$("${NEOXP}" contract invoke -i "${EXPRESS_FILE}" -j -r "${INVOKE_DIR}/stakeof.json" dev | jq -r '.stack[0].value')
-if [[ "${total_stake}" != "100000000" || "${stake_of}" != "100000000" ]]; then
+if [[ "${total_stake}" != "1" || "${stake_of}" != "1" ]]; then
   echo "stake mismatch: total=${total_stake} stakeOf=${stake_of}" >&2
   exit 1
 fi
