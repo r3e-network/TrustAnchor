@@ -84,6 +84,9 @@ namespace TrustAnchor
         private const byte PREFIXOWNERDELAY = 0x31;
         private const byte PREFIXPAUSED = 0x40;
 
+        /// <summary>Reentrancy guard - prevents reentrant calls during critical operations</summary>
+        private const byte PREFIXREENTRANCYGUARD = 0xFF;
+
         // ========================================
         // Constants
         // ========================================
@@ -104,7 +107,7 @@ namespace TrustAnchor
         /// <summary>3 day delay for owner transfer (security mechanism)</summary>
         private static readonly BigInteger OWNER_CHANGE_DELAY = 3 * 24 * 3600;
 
-        [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
+        [InitialValue("0x36f7b411fdf54a0495e21360836e90b1f2a428f9", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_OWNER = default;
 
         // ========================================
@@ -321,26 +324,38 @@ namespace TrustAnchor
         /// Claim accumulated GAS rewards for a user.
         ///
         /// Process:
-        /// 1. Sync account to calculate latest rewards
-        /// 2. Transfer available GAS to user
-        /// 3. Reset reward balance to zero
+        /// 1. Verify reentrancy guard is not set (prevents reentrancy attacks)
+        /// 2. Set reentrancy guard
+        /// 3. Sync account to calculate latest rewards
+        /// 4. Transfer available GAS to user
+        /// 5. Reset reward balance to zero
+        /// 6. Clear reentrancy guard
+        ///
+        /// SECURITY: Reentrancy guard prevents double-claiming attacks where
+        /// a malicious contract could re-enter this function during the GAS transfer.
         /// </summary>
         /// <param name="account">User claiming rewards</param>
         public static void ClaimReward(UInt160 account)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(account));
 
-            // Sync first to capture any pending rewards
-            SyncAccount(account);
+            ExecutionEngine.Assert(Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREENTRANCYGUARD }) is null, "Reentrancy guard is set");
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREENTRANCYGUARD }, 1);
 
-            BigInteger reward = (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
-            if (reward > BigInteger.Zero)
+            try
             {
-                // Reset reward balance after claiming
-                new StorageMap(Storage.CurrentContext, PREFIXREWARD).Put(account, 0);
+                SyncAccount(account);
 
-                // Transfer GAS to user
-                ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, account, reward));
+                BigInteger reward = (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
+                if (reward > BigInteger.Zero)
+                {
+                    new StorageMap(Storage.CurrentContext, PREFIXREWARD).Put(account, 0);
+                    ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, account, reward), "GAS transfer failed");
+                }
+            }
+            finally
+            {
+                Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXREENTRANCYGUARD });
             }
         }
 
@@ -526,16 +541,43 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(IsPendingConfigActive());
             ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS_BIG);
-            
+
             // SECURITY: Enhanced input validation
             ExecutionEngine.Assert(weight >= BigInteger.Zero && weight <= TOTALWEIGHT, "Weight must be 0-21");
-            
-            // Validate ECPoint format (should be 33 bytes in compressed form)
+
+            // Get ECPoint bytes - CLI may pass as hex string
             var targetBytes = (byte[])(object)target;
+            if (targetBytes is null || targetBytes.Length != 33)
+            {
+                // Try parsing as hex string (66 chars = 33 bytes + "0x" prefix)
+                var targetStr = (string)(object)target;
+                if (targetStr is not null && targetStr.Length == 66)
+                {
+                    targetBytes = HexToBytes(targetStr);
+                }
+            }
             ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33, "Invalid ECPoint format");
 
-            var data = SerializeAgentConfig(target, weight);
+            // Convert decoded bytes back to ECPoint for serialization
+            var targetECPoint = (ECPoint)(object)targetBytes;
+            var data = SerializeAgentConfig(targetECPoint, weight);
             new StorageMap(Storage.CurrentContext, PREFIXPENDINGCONFIG).Put((ByteString)index, data);
+        }
+
+        /// <summary>Diagnostic method to check ECPoint parameter</summary>
+        public static string DebugECPoint(ECPoint target)
+        {
+            var bytes = (byte[])(object)target;
+            if (bytes is null) return "null";
+            return $"length={bytes.Length}";
+        }
+
+        /// <summary>Diagnostic method to check ByteString parameter</summary>
+        public static string DebugByteString(ByteString data)
+        {
+            var bytes = (byte[])(object)data;
+            if (bytes is null) return "null";
+            return $"length={bytes.Length}";
         }
 
         /// <summary>Batch set all 21 agent targets and weights at once</summary>
@@ -577,6 +619,45 @@ namespace TrustAnchor
                 var data = SerializeAgentConfig(targets[i], weights[i]);
                 pendingMap.Put(AgentKey(i), data);
             }
+        }
+
+        /// <summary>Set agent config using ByteString for ECPoint (CLI-friendly)</summary>
+        /// <param name="index">Agent index (0-20)</param>
+        /// <param name="targetBytes">ECPoint as ByteString/ByteArray (33 bytes)</param>
+        /// <param name="weight">Voting weight</param>
+        public static void SetAgentConfigBytes(BigInteger index, ByteString targetBytes, BigInteger weight)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPendingConfigActive());
+            ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS_BIG);
+            ExecutionEngine.Assert(weight >= BigInteger.Zero && weight <= TOTALWEIGHT);
+
+            var bytes = (byte[])(object)targetBytes;
+            ExecutionEngine.Assert(bytes is not null && bytes.Length == 33, "Invalid ECPoint bytes length");
+
+            var target = (ECPoint)(object)bytes;
+            var data = SerializeAgentConfig(target, weight);
+            new StorageMap(Storage.CurrentContext, PREFIXPENDINGCONFIG).Put((ByteString)index, data);
+        }
+
+        /// <summary>Set agent config using hex string for ECPoint (CLI-friendly)</summary>
+        /// <param name="index">Agent index (0-20)</param>
+        /// <param name="targetHex">ECPoint as hex string (66 chars = 33 bytes)</param>
+        /// <param name="weight">Voting weight</param>
+        public static void SetAgentConfigHex(BigInteger index, string targetHex, BigInteger weight)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPendingConfigActive());
+            ExecutionEngine.Assert(index >= 0 && index < MAXAGENTS_BIG);
+            ExecutionEngine.Assert(weight >= BigInteger.Zero && weight <= TOTALWEIGHT);
+
+            // Convert hex string to byte array
+            var targetBytes = HexToBytes(targetHex);
+            ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33, "Invalid ECPoint hex length");
+
+            var target = (ECPoint)(object)targetBytes;
+            var data = SerializeAgentConfig(target, weight);
+            new StorageMap(Storage.CurrentContext, PREFIXPENDINGCONFIG).Put((ByteString)index, data);
         }
 
         /// <summary>Update only the target for a specific agent (preserves current weight)</summary>
@@ -1089,6 +1170,51 @@ namespace TrustAnchor
             var weightBytes = new byte[weightBytesLength];
             for (int i = 0; i < weightBytesLength; i++) weightBytes[i] = data[33 + i];
             return new BigInteger(weightBytes);
+        }
+
+        /// <summary>Convert hex string to byte array</summary>
+        private static byte[] HexToBytes(string hex)
+        {
+            if (hex is null || hex.Length == 0)
+                return null;
+
+            // Remove 0x prefix if present
+            if (hex.Length >= 2)
+            {
+                var firstChar = hex[0];
+                var secondChar = hex[1];
+                if ((firstChar == '0') && (secondChar == 'x' || secondChar == 'X'))
+                {
+                    hex = hex.Substring(2);
+                }
+            }
+
+            // Ensure even length
+            if (hex.Length % 2 != 0)
+                return null;
+
+            var bytes = new byte[hex.Length / 2];
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                var high = HexCharToInt(hex[i * 2]);
+                var low = HexCharToInt(hex[i * 2 + 1]);
+                if (high < 0 || low < 0)
+                    return null;
+                bytes[i] = (byte)((high << 4) | low);
+            }
+            return bytes;
+        }
+
+        /// <summary>Convert hex character to integer value</summary>
+        private static int HexCharToInt(char c)
+        {
+            if (c >= '0' && c <= '9')
+                return c - '0';
+            if (c >= 'a' && c <= 'f')
+                return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F')
+                return c - 'A' + 10;
+            return -1; // Invalid hex char
         }
     }
 }

@@ -41,10 +41,10 @@ TrustAnchor/
 │   ├── TrustAnchorAgent.cs        # Agent contract for voting
 │   ├── TrustAnchor.Tests/         # Test suite
 │   └── README.md                  # Contract documentation
-├── TEE/                           # Operational automation tools
+├── TrustAnchor/                   # Operational automation tools
 │   ├── TrustAnchorClaimer         # Automated GAS claiming
 │   ├── TrustAnchorRepresentative  # Automated GAS distribution
-│   └── README.md                  # TEE documentation
+│   └── README.md                  # TrustAnchor documentation
 └── .github/workflows/              # CI/CD workflows
 ```
 
@@ -138,17 +138,17 @@ dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 
 ## TEE Automation
 
-The [TEE/](TEE/) folder contains automated tools for operational tasks:
+The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational tasks:
 
 - **TrustAnchorClaimer** - Automatically claims GAS from Agent contracts
 - **TrustAnchorRepresentative** - Distributes GAS back to stakers
 - **KeyGenerator** - Generates secure NEO wallets
 
-See [TEE/README.md](TEE/README.md) for details.
+See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
 
 ## License
 
-[Add your license here]
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
