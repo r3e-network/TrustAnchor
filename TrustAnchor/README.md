@@ -17,6 +17,7 @@ The TrustAnchor tools automate operational tasks for TrustAnchor:
 | Project                       | Purpose                                      | Schedule      |
 | ----------------------------- | -------------------------------------------- | ------------- |
 | **TrustAnchorDeployer**       | Deploy TrustAnchor and 21 Agent contracts   | Manual        |
+| **ConfigureAgent**            | Update agent target/name/voting amount       | Manual        |
 | **TrustAnchorClaimer**        | Claims unclaimed GAS from 21 Agent contracts | Every 6 hours |
 | **TrustAnchorRepresentative** | Distributes GAS to contributors              | Every 6 hours |
 | **KeyGenerator**              | Generates NEO keypairs                       | Manual        |
@@ -37,8 +38,8 @@ One-time deployment tool for:
 
 1. **Deploy TrustAnchor Contract** - Compiles and deploys the main staking contract
 2. **Deploy 21 Agent Contracts** - Creates all required agent contracts
-3. **Register Agents** - Configures agent addresses in TrustAnchor
-4. **Initial Configuration** - Sets up equal weight distribution
+3. **Register Agents** - Registers agent addresses, targets, and names
+4. **Initial Voting Priority** - Sets default voting amount (manual updates later)
 
 **Usage:**
 ```bash
@@ -54,6 +55,21 @@ dotnet run --project TrustAnchorDeployer
 - `NCCS_PATH` - Optional override for the `nccs` compiler path
 
 **Workflow:** `.github/workflows/TrustAnchorDeployer.yml`
+
+### ConfigureAgent
+
+Manual tool to update a specific agent:
+
+```bash
+cd TrustAnchor
+dotnet run --project ConfigureAgent -- \
+  "$WIF" \
+  "$TRUSTANCHOR" \
+  0 \
+  "$VOTE_TARGET" \
+  "agent-0" \
+  1
+```
 
 ## Configuration
 

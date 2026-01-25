@@ -31,10 +31,10 @@ Unlike traditional voting systems that concentrate power based on wealth or extr
 │                      TrustAnchor Contract                        │
 │  - Accepts NEO deposits                                         │
 │  - Tracks staked amount per user                                │
-│  - Routes NEO to 21 Agents by weight                            │
+│  - Routes NEO to highest voting agent                           │
 │  - Distributes 100% of GAS to stakers                           │
 └────────────────────────┬────────────────────────────────────────┘
-                         │ Distribute by Weight
+                         │ Manual voting target
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     TrustAnchorAgent[0-20]                        │
@@ -50,9 +50,15 @@ Unlike traditional voting systems that concentrate power based on wealth or extr
 - **Non-Custodial Staking**: Users always maintain control of their assets
 - **Zero Fees**: 100% of GAS rewards distributed to stakers
 - **Proportional Rewards**: GAS distributed based on staked NEO amount
-- **Flexible Delegation**: Choose agents based on their voting targets
+- **Manual Voting Control**: Manager sets agent targets, names, and voting priority
 - **Transparent Voting**: All agent votes are publicly visible on-chain
-- **Secure Config**: Time-locked owner transfers and pause mechanisms
+- **Secure Admin**: Time-locked owner transfers and pause mechanisms
+
+## Agent Management
+
+- **Max 21 Agents**: Manager can register up to 21 agent contracts
+- **Updatable Metadata**: Agent target and name can be updated later
+- **Manual Priority**: Voting amount is only used to route new deposits (no on-chain rebalance)
 
 ## Reward Distribution
 
