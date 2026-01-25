@@ -83,6 +83,8 @@ Due to the limitations of the toolkits at that time, this code used some tricky 
 
 In order to keep consistency with the smart contract code running on mainnet, the code will not be switched to a new compiler version for the time being.
 
+**Emergency Operations:** `WithdrawGAS` is only permitted when the contract is paused and is intended for emergency use, not normal reward distribution.
+
 ## Registry
 
 | Contract Name      | Script Hash | Address |

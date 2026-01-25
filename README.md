@@ -56,6 +56,7 @@ TrustAnchor/
 - **Flexible Delegation**: Choose agents based on their voting targets
 - **Transparent Voting**: All agent votes are publicly visible on-chain
 - **Secure Config**: Time-locked owner transfers and pause mechanisms
+- **Emergency Control**: Owner GAS withdrawal is only permitted while paused and is not part of normal rewards
 
 ## How It Works
 
