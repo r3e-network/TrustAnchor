@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Neo" Version="3.6.0" />
-    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.6.0" />
+    <PackageReference Include="Neo" Version="3.8.1" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.8.1" />
   </ItemGroup>
 </Project>
