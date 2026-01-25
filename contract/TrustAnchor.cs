@@ -626,6 +626,32 @@ namespace TrustAnchor
             new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Put((ByteString)index, amount);
         }
 
+        /// <summary>Vote using agent id</summary>
+        public static void VoteAgentById(BigInteger index)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(index >= 0 && index < AgentCount());
+
+            var agent = Agent(index);
+            ExecutionEngine.Assert(agent != UInt160.Zero);
+            var target = AgentTarget(index);
+            Contract.Call(agent, "vote", CallFlags.All, new object[] { target });
+        }
+
+        /// <summary>Vote using agent name</summary>
+        public static void VoteAgentByName(string name)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            VoteAgentById(GetAgentIdByName(name));
+        }
+
+        /// <summary>Vote using target public key</summary>
+        public static void VoteAgentByTarget(ECPoint target)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            VoteAgentById(GetAgentIdByTarget(target));
+        }
+
         // ========================================
         // Configuration Management
         // ========================================
@@ -1173,6 +1199,22 @@ namespace TrustAnchor
         private static bool IsPaused()
         {
             return Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPAUSED }) is not null;
+        }
+
+        private static BigInteger GetAgentIdByName(string name)
+        {
+            var data = new StorageMap(Storage.CurrentContext, PREFIX_NAME_TO_ID).Get(name);
+            ExecutionEngine.Assert(data is not null, "Unknown agent name");
+            return (BigInteger)data;
+        }
+
+        private static BigInteger GetAgentIdByTarget(ECPoint target)
+        {
+            var targetBytes = (byte[])(object)target;
+            ExecutionEngine.Assert(targetBytes is not null && targetBytes.Length == 33);
+            var data = new StorageMap(Storage.CurrentContext, PREFIX_TARGET_TO_ID).Get((ByteString)targetBytes);
+            ExecutionEngine.Assert(data is not null, "Unknown agent target");
+            return (BigInteger)data;
         }
 
         private static ByteString AgentKey(int index)

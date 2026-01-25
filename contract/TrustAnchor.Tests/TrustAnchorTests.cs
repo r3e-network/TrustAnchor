@@ -176,6 +176,19 @@ public class TrustAnchorTests
     }
 
     [Fact]
+    public void Manual_vote_by_id_name_target()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[0], fixture.AgentCandidate(0), "a0");
+
+        fixture.CallFrom(fixture.OwnerHash, "voteAgentById", 0);
+        Assert.Equal(fixture.AgentCandidate(0), fixture.AgentLastVote(0));
+
+        fixture.CallFrom(fixture.OwnerHash, "voteAgentByName", "a0");
+        fixture.CallFrom(fixture.OwnerHash, "voteAgentByTarget", fixture.AgentCandidate(0));
+    }
+
+    [Fact]
     public void Withdraw_starts_from_lowest_non_zero_weight_agent()
     {
         var fixture = new TrustAnchorFixture();
