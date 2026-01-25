@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using LibRPC;
 using Neo;
-using Neo.Core;
 using Neo.Cryptography;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
@@ -20,16 +22,44 @@ namespace TrustAnchorDeployer
     {
         public static readonly string WIF = Environment.GetEnvironmentVariable("WIF");
         private static readonly string OWNER_HASH = Environment.GetEnvironmentVariable("OWNER_HASH");
-        private static readonly string CONTRACTS_DIR = Environment.GetEnvironmentVariable("CONTRACTS_DIR") ?? "contract";
         private static readonly uint MAXAGENTS = 21;
         private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
 
-        public static readonly KeyPair keypair = Utility.GetKeyPair(WIF);
+        public static readonly KeyPair keypair = Neo.Network.RPC.Utility.GetKeyPair(WIF);
         private static readonly UInt160 deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
         public static readonly Signer[] signers = new[] 
         { 
             new Signer { Scopes = WitnessScope.Global, Account = deployer } 
         };
+
+        internal static string ResolveContractsDir()
+        {
+            var overrideDir = Environment.GetEnvironmentVariable("CONTRACTS_DIR")
+                ?? Environment.GetEnvironmentVariable("SCRIPTS_DIR");
+            if (!string.IsNullOrWhiteSpace(overrideDir))
+            {
+                return Path.GetFullPath(overrideDir);
+            }
+
+            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (dir != null)
+            {
+                var candidate = Path.Combine(dir.FullName, "contract");
+                if (Directory.Exists(candidate))
+                {
+                    return candidate;
+                }
+                dir = dir.Parent;
+            }
+
+            throw new DirectoryNotFoundException("Contract source directory not found. Set CONTRACTS_DIR.");
+        }
+
+        internal static string ResolveNccsPath()
+        {
+            var overridePath = Environment.GetEnvironmentVariable("NCCS_PATH");
+            return string.IsNullOrWhiteSpace(overridePath) ? "nccs" : overridePath;
+        }
 
         static void Main(string[] args)
         {
@@ -119,7 +149,7 @@ namespace TrustAnchorDeployer
                         sb.EmitPush(bytes);
                         break;
                     case UInt160 u:
-                        sb.EmitPush(u.ToArray());
+                        sb.EmitPush(u.GetSpan());
                         break;
                     default:
                         throw new NotSupportedException(arg.GetType().ToString());
@@ -127,7 +157,7 @@ namespace TrustAnchorDeployer
             }
             
             sb.EmitPush(method);
-            sb.EmitPush(contract.ToArray());
+            sb.EmitPush(contract.GetSpan());
             sb.EmitSysCall(0x627C3A32); // System.Contract.Call
             
             return sb.ToArray();
@@ -135,34 +165,9 @@ namespace TrustAnchorDeployer
 
         static string SendTransaction(byte[] script)
         {
-            // Build transaction
-            var tx = new Transaction
-            {
-                Version = 0,
-                Script = script,
-                Signers = signers,
-                NetworkFee = 0,
-                SystemFee = 0,
-                Nonce = (uint)new Random().Next(1, int.MaxValue),
-                ValidUntilBlock = 2102400, // Approximately 1 year
-                Attributes = Array.Empty<TransactionAttribute>()
-            };
-
-            // Sign transaction
-            var context = new ContractParametersContext(tx);
-            context.Add(Contract.CreateSignatureContract(keypair.PublicKey), keypair.Sign(tx.GetHash()));
-            tx.Witnesses = context.GetWitnesses();
-
-            // Serialize and send via RPC
-            var hexTx = tx.ToArray().ToHexString();
-            
-            var result = PostRpc("sendrawtransaction", $"[\"{hexTx}\"]");
-            if (result.Contains("error"))
-            {
-                throw new Exception($"Transaction failed: {result}");
-            }
-            
-            return ParseHash(result);
+            var txMgr = script.TxMgr(signers);
+            var signedTx = txMgr.AddSignature(keypair).SignAsync().GetAwaiter().GetResult();
+            return signedTx.Send().ToString();
         }
 
         static string SendTransaction(byte[] nef, string manifest)
@@ -171,7 +176,7 @@ namespace TrustAnchorDeployer
             sb.EmitPush(System.Text.Encoding.UTF8.GetBytes(manifest));
             sb.EmitPush(nef);
             sb.EmitPush("deploy");
-            sb.EmitPush(NativeContract.ContractManagement.Hash.ToArray());
+            sb.EmitPush(NativeContract.ContractManagement.Hash.GetSpan());
             sb.EmitSysCall(0x627C3A32);
             
             return SendTransaction(sb.ToArray());
@@ -195,16 +200,11 @@ namespace TrustAnchorDeployer
 
         static (string nefPath, byte[] nefBytes, UInt160 scriptHash) CompileContract(string sourceFileName, string contractName, string argsHash)
         {
-            string[] paths = new[]
+            var contractsDir = ResolveContractsDir();
+            string sourcePath = Path.Combine(contractsDir, sourceFileName);
+            if (!File.Exists(sourcePath))
             {
-                Path.Combine("/home/neo/git/bneo/contract", sourceFileName),
-                Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "contract", sourceFileName)
-            };
-
-            string sourcePath = paths.FirstOrDefault(p => File.Exists(p));
-            if (sourcePath == null)
-            {
-                throw new FileNotFoundException($"Cannot find {sourceFileName}");
+                throw new FileNotFoundException($"Cannot find {sourceFileName} in {contractsDir}");
             }
 
             var source = File.ReadAllText(sourcePath);
@@ -229,7 +229,7 @@ namespace TrustAnchorDeployer
 
             var psi = new ProcessStartInfo
             {
-                FileName = "/home/neo/.dotnet/tools/nccs",
+                FileName = ResolveNccsPath(),
                 Arguments = $"\"{tempSource}\" -o \"{tempDir}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
