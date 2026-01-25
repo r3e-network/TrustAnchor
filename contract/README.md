@@ -83,31 +83,35 @@ Due to the limitations of the toolkits at that time, this code used some tricky 
 
 In order to keep consistency with the smart contract code running on mainnet, the code will not be switched to a new compiler version for the time being.
 
-**Emergency Operations:** `WithdrawGAS` is only permitted when the contract is paused and is intended for emergency use, not normal reward distribution.
+**Emergency Operations:** Owner `WithdrawGAS` is disabled to ensure rewards remain with stakers.
+
+**Reward Handling:** GAS received before any staking begins is held and distributed once the first stake is created.
 
 ## Registry
 
+Populate after deployment; values below are intentionally left blank until recorded.
+
 | Contract Name      | Script Hash | Address |
 | ------------------ | ----------- | ------- |
-| TrustAnchor        | `TBD`       | `TBD`   |
-| TrustAnchorAgent0  | `TBD`       | `TBD`   |
-| TrustAnchorAgent1  | `TBD`       | `TBD`   |
-| TrustAnchorAgent2  | `TBD`       | `TBD`   |
-| TrustAnchorAgent3  | `TBD`       | `TBD`   |
-| TrustAnchorAgent4  | `TBD`       | `TBD`   |
-| TrustAnchorAgent5  | `TBD`       | `TBD`   |
-| TrustAnchorAgent6  | `TBD`       | `TBD`   |
-| TrustAnchorAgent7  | `TBD`       | `TBD`   |
-| TrustAnchorAgent8  | `TBD`       | `TBD`   |
-| TrustAnchorAgent9  | `TBD`       | `TBD`   |
-| TrustAnchorAgent10 | `TBD`       | `TBD`   |
-| TrustAnchorAgent11 | `TBD`       | `TBD`   |
-| TrustAnchorAgent12 | `TBD`       | `TBD`   |
-| TrustAnchorAgent13 | `TBD`       | `TBD`   |
-| TrustAnchorAgent14 | `TBD`       | `TBD`   |
-| TrustAnchorAgent15 | `TBD`       | `TBD`   |
-| TrustAnchorAgent16 | `TBD`       | `TBD`   |
-| TrustAnchorAgent17 | `TBD`       | `TBD`   |
-| TrustAnchorAgent18 | `TBD`       | `TBD`   |
-| TrustAnchorAgent19 | `TBD`       | `TBD`   |
-| TrustAnchorAgent20 | `TBD`       | `TBD`   |
+| TrustAnchor        | `-`         | `-`     |
+| TrustAnchorAgent0  | `-`         | `-`     |
+| TrustAnchorAgent1  | `-`         | `-`     |
+| TrustAnchorAgent2  | `-`         | `-`     |
+| TrustAnchorAgent3  | `-`         | `-`     |
+| TrustAnchorAgent4  | `-`         | `-`     |
+| TrustAnchorAgent5  | `-`         | `-`     |
+| TrustAnchorAgent6  | `-`         | `-`     |
+| TrustAnchorAgent7  | `-`         | `-`     |
+| TrustAnchorAgent8  | `-`         | `-`     |
+| TrustAnchorAgent9  | `-`         | `-`     |
+| TrustAnchorAgent10 | `-`         | `-`     |
+| TrustAnchorAgent11 | `-`         | `-`     |
+| TrustAnchorAgent12 | `-`         | `-`     |
+| TrustAnchorAgent13 | `-`         | `-`     |
+| TrustAnchorAgent14 | `-`         | `-`     |
+| TrustAnchorAgent15 | `-`         | `-`     |
+| TrustAnchorAgent16 | `-`         | `-`     |
+| TrustAnchorAgent17 | `-`         | `-`     |
+| TrustAnchorAgent18 | `-`         | `-`     |
+| TrustAnchorAgent19 | `-`         | `-`     |
+| TrustAnchorAgent20 | `-`         | `-`     |
