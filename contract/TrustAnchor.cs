@@ -193,6 +193,25 @@ namespace TrustAnchor
             return data is null ? BigInteger.Zero : (BigInteger)data;
         }
 
+        /// <summary>Get full agent metadata by index</summary>
+        public static object[] AgentInfo(BigInteger index)
+        {
+            ExecutionEngine.Assert(index >= 0 && index < AgentCount());
+            return new object[] { index, Agent(index), AgentTarget(index), AgentName(index), AgentVoting(index) };
+        }
+
+        /// <summary>List all registered agents</summary>
+        public static object[] AgentList()
+        {
+            int count = (int)AgentCount();
+            var result = new object[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = AgentInfo(i);
+            }
+            return result;
+        }
+
         // ========================================
         // Contract Lifecycle
         // ========================================

@@ -1,5 +1,8 @@
 using System.Numerics;
 using Neo;
+using Neo.Cryptography.ECC;
+using Neo.VM.Types;
+using VmArray = Neo.VM.Types.Array;
 using Xunit;
 
 namespace TrustAnchor.Tests;
@@ -215,6 +218,24 @@ public class TrustAnchorTests
 
         fixture.CallFrom(fixture.OwnerHash, "pause");
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1)));
+    }
+
+    [Fact]
+    public void AgentInfo_and_list_return_metadata()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
+        fixture.CallFrom(fixture.OwnerHash, "setAgentVotingById", 0, new BigInteger(5));
+
+        var info = fixture.Call<VmArray>("agentInfo", 0);
+        Assert.Equal(new BigInteger(0), info[0].GetInteger());
+        Assert.Equal(fixture.AgentHashes[0], new UInt160(info[1].GetSpan()));
+        Assert.Equal(fixture.AgentCandidate(0).EncodePoint(true), info[2].GetSpan().ToArray());
+        Assert.Equal("agent-0", info[3].GetString());
+        Assert.Equal(new BigInteger(5), info[4].GetInteger());
+
+        var list = fixture.Call<VmArray>("agentList");
+        Assert.Equal(1, list.Count);
     }
 
     [Fact]
