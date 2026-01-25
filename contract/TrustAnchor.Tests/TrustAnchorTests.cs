@@ -220,7 +220,7 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void WithdrawGAS_requires_pause()
+    public void WithdrawGAS_is_disabled()
     {
         var fixture = new TrustAnchorFixture();
         fixture.MintGas(fixture.OtherHash, 2);
@@ -229,6 +229,6 @@ public class TrustAnchorTests
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1)));
 
         fixture.CallFrom(fixture.OwnerHash, "pause");
-        fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1)));
     }
 }

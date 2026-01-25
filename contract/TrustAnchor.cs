@@ -935,10 +935,8 @@ namespace TrustAnchor
         /// <summary>Withdraw GAS from contract (e.g., for operations or testing)</summary>
         public static void WithdrawGAS(BigInteger amount)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-            ExecutionEngine.Assert(IsPaused());
-            ExecutionEngine.Assert(amount > BigInteger.Zero);
-            ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, Owner(), amount));
+            // Disabled: rewards must remain with stakers.
+            ExecutionEngine.Assert(false);
         }
 
         // ========================================
