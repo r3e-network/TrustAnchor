@@ -1,4 +1,4 @@
-name: TrustAnchorClaimer
+name: TrustAnchorRepresentative
 
 on:
   workflow_dispatch:
@@ -17,11 +17,14 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore TrustAnchor/TrustAnchor.sln
 
-      - name: Run Claimer
-        run: echo "Starting GAS claim process..." | dotnet run --project TrustAnchorClaimer
+      - name: Run Representative
+        run: dotnet run --project TrustAnchor/TrustAnchorRepresentative
         env:
           WIF: ${{ secrets.TEEWIF }}
-          RPC: https://n3seed2.ngd.network:10332
+          RPC: ${{ secrets.RPC_TESTNET }}
+          TRUSTANCHOR: ${{ secrets.TRUSTANCHOR }}
           THRESHOLD: 17179869184
+          REPRESENTATIVE: ${{ secrets.REPRESENTATIVE }}
+          TARGET: ${{ secrets.TARGET }}

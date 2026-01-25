@@ -2,9 +2,6 @@ name: TrustAnchorDeployer
 
 on:
   workflow_dispatch:
-    inputs:
-    environment:
-      description: 'Deployment environment (mainnet/testnet)'
 
 jobs:
   deploy:
@@ -21,14 +18,14 @@ jobs:
         run: dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore TrustAnchor/TrustAnchor.sln
 
       - name: Run Deployer
         env:
           WIF: ${{ secrets.TEEWIF }}
           RPC: ${{ secrets.RPC_TESTNET }}
           OWNER_HASH: ${{ secrets.OWNER_HASH }}
-          SCRIPTS_DIR: contract
+          CONTRACTS_DIR: contract
         run: |
           echo "Starting deployment..."
-          dotnet run --project TrustAnchorDeployer
+          dotnet run --project TrustAnchor/TrustAnchorDeployer
