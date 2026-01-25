@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # TrustAnchor Testnet Deployment and Testing Script
 # This script deploys TrustAnchor contracts to NEO testnet and tests functionality
@@ -9,17 +9,18 @@ echo "TrustAnchor Testnet Deployment & Testing"
 echo "=========================================="
 
 # Export environment variables
-export DEPLOYER_WIF="KzjaqMvqzF1uup6KrTKRxTgjcXE7PbKLRH84e6ckyXDt3fu7afUb"
-export STAKER_WIF="Kz5f7PbBh3uxx2DDrQyrCki4xxXnNhJ9YLR7eEcKbJGzQbgStahn"
-export RPC_URL="https://n3seed2.ngd.network:10332"
-export TESTNET_RPC="https://n3seed2.ngd.network:10332"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OPS_DIR="$ROOT_DIR/TrustAnchor"
+: "${DEPLOYER_WIF:?DEPLOYER_WIF env var is required}"
+RPC_URL="${RPC_URL:-https://n3seed2.ngd.network:10332}"
+TESTNET_RPC="${TESTNET_RPC:-$RPC_URL}"
 
 # Create environment file
-cat > /home/neo/git/bneo/TrustAnchor/.env.testnet <<EOF
+cat > "$OPS_DIR/.env.testnet" <<EOF
 WIF=$DEPLOYER_WIF
 RPC=$TESTNET_RPC
 OWNER_HASH=
-SCRIPTS_DIR=../contract
+CONTRACTS_DIR=$ROOT_DIR/contract
 TRUSTANCHOR=
 THRESHOLD=100000000
 MOD=1
@@ -39,7 +40,7 @@ echo ""
 echo "=========================================="
 echo "Building TrustAnchorDeployer..."
 echo "=========================================="
-cd /home/neo/git/bneo/TrustAnchor
+cd "$OPS_DIR"
 dotnet build TrustAnchorDeployer/TrustAnchorDeployer.csproj -c Release
 
 echo ""
@@ -48,7 +49,7 @@ echo "Deployment ready!"
 echo "=========================================="
 echo ""
 echo "To deploy, run:"
-echo "  cd /home/neo/git/bneo/TrustAnchor"
+echo "  cd \"$OPS_DIR\""
 echo "  WIF=\$DEPLOYER_WIF RPC=\$TESTNET_RPC dotnet run --project TrustAnchorDeployer"
 echo ""
 echo "After deployment, note the contract hashes and update .env.testnet"

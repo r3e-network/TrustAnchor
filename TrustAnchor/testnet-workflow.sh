@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 # TrustAnchor Testnet Complete Workflow
 # Deploys contracts, tests functionality, stakes NEO, and configures voting
@@ -9,11 +9,13 @@ echo "TrustAnchor Complete Testnet Workflow"
 echo "=============================================="
 
 # Configuration
-DEPLOYER_WIF="KzjaqMvqzF1uup6KrTKRxTgjcXE7PbKLRH84e6ckyXDt3fu7afUb"
-STAKER_WIF="Kz5f7PbBh3uxx2DDrQyrCki4xxXnNhJ9YLR7eEcKbJGzQbgStahn"
-VOTE_TARGET="036d13bdb7da325738167f2adde14e424e8cbfebc5501437a22f4e7668a3116168"
-RPC_URL="https://n3seed2.ngd.network:10332"
-ADDRESS_VERSION=53
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OPS_DIR="$ROOT_DIR/TrustAnchor"
+: "${DEPLOYER_WIF:?DEPLOYER_WIF env var is required}"
+: "${STAKER_WIF:?STAKER_WIF env var is required}"
+: "${VOTE_TARGET:?VOTE_TARGET env var is required}"
+RPC_URL="${RPC_URL:-https://n3seed2.ngd.network:10332}"
+ADDRESS_VERSION="${ADDRESS_VERSION:-53}"
 
 echo ""
 echo "Configuration:"
@@ -37,7 +39,7 @@ echo "=============================================="
 echo "PHASE 1: Building and Deploying Contracts"
 echo "=============================================="
 
-cd /home/neo/git/bneo/TrustAnchor
+cd "$OPS_DIR"
 
 # Build the deployer
 echo "Building TrustAnchorDeployer..."
@@ -53,7 +55,7 @@ sleep 10
 dotnet run --project TrustAnchorDeployer --configuration Release 2>&1 | tee /tmp/deployment.log
 
 # Extract TrustAnchor hash from logs
-TRUSTANCHOR_HASH=$(grep -oP 'TrustAnchor deployed: \K[0-9a-fA-F]{40}' /tmp/deployment.log || echo "")
+TRUSTANCHOR_HASH=$(grep -oP 'TrustAnchor: \K[0-9a-fA-F]{40}' /tmp/deployment.log || echo "")
 if [ -z "$TRUSTANCHOR_HASH" ]; then
     echo "ERROR: Could not extract TrustAnchor hash from deployment log"
     exit 1
@@ -64,7 +66,7 @@ echo "TrustAnchor Contract Hash: $TRUSTANCHOR_HASH"
 echo "TrustAnchor Address: $(echo $TRUSTANCHOR_HASH | xxd -r -p | base64 | tr '/+' '_-' | tr -d '=')"
 
 # Extract agent hashes
-AGENT_HASHES=$(grep -oP 'Agent [0-9]* deployed: \K[0-9a-fA-F]{40}' /tmp/deployment.log | tr '\n' ',' | sed 's/,$//')
+AGENT_HASHES=$(grep -oP 'Agent [0-9]+: \K[0-9a-fA-F]{40}' /tmp/deployment.log | tr '\n' ',' | sed 's/,$//')
 
 echo ""
 echo "Agent Hashes: $AGENT_HASHES"
@@ -332,7 +334,7 @@ echo "Deployment files created. To execute on testnet, run the compiled executab
 echo ""
 echo "Next steps:"
 echo "1. Ensure deployer wallet has sufficient NEO and GAS"
-echo "2. Run: cd /home/neo/git/bneo/TrustAnchor && dotnet run --project TrustAnchorDeployer"
+echo "2. Run: cd \"$OPS_DIR\" && dotnet run --project TrustAnchorDeployer"
 echo "3. Configure agents with vote targets"
 echo "4. Stake NEO to earn rewards"
 echo "5. Verify deployment and test claiming"
