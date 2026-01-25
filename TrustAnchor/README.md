@@ -50,9 +50,10 @@ dotnet run --project TrustAnchorDeployer
 - `WIF` - Deployer wallet private key
 - `RPC` - NEO RPC endpoint (testnet/mainnet)
 - `OWNER_HASH` - Owner address script hash
-- `SCRIPTS_DIR` - Path to contract source files (default: contract/)
+- `CONTRACTS_DIR` - Path to contract source files (default: contract/)
+- `NCCS_PATH` - Optional override for the `nccs` compiler path
 
-**Workflow:** `TrustAnchor/.github/workflows/TrustAnchorDeployer.yml`
+**Workflow:** `.github/workflows/TrustAnchorDeployer.yml`
 
 ## Configuration
 
@@ -90,7 +91,7 @@ Runs every 6 hours to:
 2. Call `sync()` on agents with significant unclaimed GAS
 3. Call `claim()` to collect GAS to Representative
 
-**Workflow**: `TrustAnchor/.github/workflows/TrustAnchorClaimer.yml`
+**Workflow**: `.github/workflows/TrustAnchorClaimer.yml`
 
 ### TrustAnchorRepresentative
 
@@ -100,7 +101,7 @@ Runs every 6 hours to:
 2. If above threshold, transfer GAS to TARGET
 3. Reserve ~1 GAS for transaction fees
 
-**Workflow**: `TrustAnchor/.github/workflows/TrustAnchorRepresentative.yml`
+**Workflow**: `.github/workflows/TrustAnchorRepresentative.yml`
 
 ### GenerateKey
 
@@ -110,23 +111,22 @@ Manual workflow to:
 2. Encrypt WIF and store as GitHub secret
 3. Output public address
 
-**Workflow**: `TrustAnchor/.github/workflows/GenerateKey.yml`
+**Workflow**: `.github/workflows/GenerateKey.yml`
 
 ## Building Locally
 
 ```bash
 # Build all projects
 cd TrustAnchor
-dotnet restore
-dotnet build
+dotnet restore TrustAnchor.sln
+dotnet build TrustAnchor.sln
 
 # Run specific tool
-cd TrustAnchorClaimer
 export TRUSTANCHOR="0x..."
 export WIF="..."
 export RPC="https://..."
 export THRESHOLD="17179869184"
-dotnet run
+dotnet run --project TrustAnchorClaimer
 ```
 
 ## Target Framework

@@ -41,10 +41,11 @@ TrustAnchor/
 │   ├── TrustAnchorAgent.cs        # Agent contract for voting
 │   ├── TrustAnchor.Tests/         # Test suite
 │   └── README.md                  # Contract documentation
-├── TEE/                           # Operational automation tools
+├── TrustAnchor/                   # Operational automation tools
 │   ├── TrustAnchorClaimer         # Automated GAS claiming
 │   ├── TrustAnchorRepresentative  # Automated GAS distribution
-│   └── README.md                  # TEE documentation
+│   └── README.md                  # Ops documentation
+├── TEE/                           # Legacy ops tools (kept for compatibility)
 └── .github/workflows/              # CI/CD workflows
 ```
 
@@ -122,7 +123,8 @@ Unlike traditional voting systems that concentrate power based on wealth or extr
 
 ### Prerequisites
 
-- .NET 9.0 SDK
+- .NET 9.0 SDK (contracts/tests)
+- .NET 10.0 SDK (ops tools)
 - Neo.Compiler.CSharp 3.8.1+
 
 ### Building Contracts
@@ -136,15 +138,17 @@ cd contract
 dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 ```
 
-## TEE Automation
+## Operations
 
-The [TEE/](TEE/) folder contains automated tools for operational tasks:
+The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational tasks:
 
 - **TrustAnchorClaimer** - Automatically claims GAS from Agent contracts
 - **TrustAnchorRepresentative** - Distributes GAS back to stakers
 - **KeyGenerator** - Generates secure NEO wallets
 
-See [TEE/README.md](TEE/README.md) for details.
+See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
+
+The [TEE/](TEE/) folder is legacy tooling retained for compatibility.
 
 ## License
 

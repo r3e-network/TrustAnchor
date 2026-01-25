@@ -24,15 +24,14 @@ Thank you for your interest in contributing to TrustAnchor! This document provid
    dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
    ```
 
-4. Build the project:
+4. Build the contracts:
    ```bash
-   cd contract/TrustAnchor.Tests
-   dotnet build
+   dotnet build contract/TrustAnchor.Tests/TrustAnchor.Tests.csproj
    ```
 
 5. Run tests:
    ```bash
-   dotnet test
+   dotnet test contract/TrustAnchor.Tests/TrustAnchor.Tests.csproj
    ```
 
 ## Contribution Guidelines
@@ -55,7 +54,7 @@ When modifying smart contracts:
 
 ### Pull Request Process
 
-1. Create a feature branch from `main`
+1. Create a feature branch from `master`
 2. Make your changes
 3. Ensure all tests pass
 4. Update documentation as needed
@@ -75,10 +74,11 @@ TrustAnchor/
 │   ├── TrustAnchor.cs       # Main contract
 │   ├── TrustAnchorAgent.cs  # Agent contract
 │   └── TrustAnchor.Tests/   # Test suite
-├── TEE/                # Trusted Execution Environment tools
+├── TrustAnchor/         # Operational automation tools
 │   ├── TrustAnchorClaimer      # GAS claiming automation
 │   ├── TrustAnchorRepresentative # GAS distribution
 │   └── TrustAnchorDeployer     # Contract deployment
+├── TEE/                 # Legacy ops tools (kept for compatibility)
 ├── docs/               # Documentation
 │   └── security/       # Security audit documents
 └── .github/workflows/  # CI/CD pipelines
