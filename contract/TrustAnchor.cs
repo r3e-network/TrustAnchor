@@ -207,7 +207,7 @@ namespace TrustAnchor
         /// Handles NEO and GAS payments to the contract.
         ///
         /// GAS Payment: Updates the RPS accumulator to distribute rewards to stakers.
-        /// NEO Payment: Mints new user stake and routes NEO to highest-weight agent.
+        /// NEO Payment: Mints new user stake and routes NEO to highest voting agent (priority only).
         /// </summary>
         /// <param name="from">Sender address</param>
         /// <param name="amount">Token amount</param>
@@ -378,12 +378,12 @@ namespace TrustAnchor
         /// 1. Sync user's rewards first (capture pending rewards)
         /// 2. Verify user has enough staked NEO
         /// 3. Reduce user's stake
-        /// 4. Withdraw NEO from agents (lowest weight first)
+        /// 4. Withdraw NEO from agents (lowest voting amount first)
         ///
         /// Withdrawal Strategy:
-        /// - Withdraw from agents with lowest weights first
-        /// - This preserves voting weight distribution
-        /// - Prevents emptying high-weight agents disproportionately
+        /// - Withdraw from agents with lowest voting amounts first
+        /// - This preserves manual priority ordering
+        /// - Prevents emptying high-priority agents disproportionately
         /// </summary>
         /// <param name="account">User withdrawing NEO</param>
         /// <param name="neoAmount">Amount of NEO to withdraw</param>
@@ -412,13 +412,13 @@ namespace TrustAnchor
             // ========================================
             // NEO Withdrawal from Agents
             // ========================================
-            // Strategy: Withdraw from agents in order of lowest weight first
-            // This minimizes disruption to voting weight distribution
+            // Strategy: Withdraw from agents in order of lowest voting amount first
+            // This minimizes disruption to manual voting priority
             //
-            // Example: If weights are [5,4,3,2,1] and user withdraws 3 NEO:
-            //   - Take 2 from weight 1 agent (now 0)
-            //   - Take 1 from weight 2 agent (now 1)
-            //   Result: Weights become [5,4,3,1,0] (high weights preserved)
+            // Example: If voting amounts are [5,4,3,2,1] and user withdraws 3 NEO:
+            //   - Take 2 from voting 1 agent (now 0)
+            //   - Take 1 from voting 2 agent (now 1)
+            //   Result: Voting amounts unchanged (priority preserved)
 
             BigInteger remaining = neoAmount;
             int count = (int)AgentCount();
@@ -426,7 +426,7 @@ namespace TrustAnchor
 
             for (int step = 0; step < count && remaining > BigInteger.Zero; step++)
             {
-                // Select the lowest weight agent that hasn't been used yet
+                // Select the lowest voting agent that hasn't been used yet
                 int selected = SelectLowestVotingAgentIndex(used);
                 if (selected < 0) break;  // No more agents available
                 used[selected] = true;
