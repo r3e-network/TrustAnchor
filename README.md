@@ -56,8 +56,9 @@ TrustAnchor/
 - **Proportional Rewards**: GAS distributed based on staked NEO amount
 - **Flexible Delegation**: Choose agents based on their voting targets
 - **Transparent Voting**: All agent votes are publicly visible on-chain
-- **Secure Config**: Time-locked owner transfers and pause mechanisms
-- **Emergency Control**: Owner GAS withdrawal is only permitted while paused and is not part of normal rewards
+- **Manual Voting Priority**: Manager sets per-agent voting priority to route new deposits
+- **Operational Controls**: Time-locked owner transfers and pause mechanisms
+- **Emergency Exit**: Emergency withdrawal only when paused and agents are empty
 
 ## How It Works
 
@@ -73,10 +74,10 @@ TrustAnchor/
 │                      TrustAnchor Contract                        │
 │  - Accepts NEO deposits                                         │
 │  - Tracks staked amount per user                                │
-│  - Routes NEO to 21 Agents by weight                            │
+│  - Routes NEO to the highest-priority agent (manual voting)       │
 │  - Calculates GAS reward share per user                         │
 └────────────────────────┬────────────────────────────────────────┘
-                         │ Distribute by Weight
+                         │ Manual routing
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     TrustAnchorAgent[0-20]                       │
