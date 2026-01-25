@@ -33,11 +33,7 @@ public class TrustAnchorTests
     public void Neo_deposit_increases_stake_and_totalstake()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
         Assert.Equal(new BigInteger(2), fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
@@ -48,11 +44,7 @@ public class TrustAnchorTests
     public void Neo_deposit_uses_integer_neo_units()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
 
         BigInteger depositAmount = BigInteger.Parse("30");
         fixture.MintNeo(fixture.UserHash, depositAmount);
@@ -67,11 +59,7 @@ public class TrustAnchorTests
     public void Gas_reward_accrues_and_can_be_claimed()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
@@ -89,11 +77,7 @@ public class TrustAnchorTests
     public void Gas_reward_distributes_full_amount_for_single_staker()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
@@ -111,11 +95,7 @@ public class TrustAnchorTests
     public void Gas_before_first_stake_is_distributed_on_first_stake()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
 
         fixture.MintGas(fixture.OtherHash, 10);
         fixture.GasTransfer(fixture.OtherHash, fixture.TrustHash, 5);
@@ -134,11 +114,7 @@ public class TrustAnchorTests
     public void Withdraw_reduces_stake_and_transfers_neo_from_agent()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 3);
 
@@ -156,11 +132,7 @@ public class TrustAnchorTests
     public void Withdraw_over_balance_faults()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
@@ -171,11 +143,7 @@ public class TrustAnchorTests
     public void Withdraw_zero_amount_faults()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
 
@@ -186,12 +154,10 @@ public class TrustAnchorTests
     public void Deposit_routes_to_highest_weight_agent()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 5);
-        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 16);
-        fixture.SetRemainingAgentConfigs(2, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
+        fixture.RegisterAgent(fixture.AgentHashes[1], fixture.AgentCandidate(1), "agent-1");
+        fixture.SetAgentVotingById(0, 5);
+        fixture.SetAgentVotingById(1, 16);
 
         fixture.MintNeo(fixture.UserHash, 3);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
@@ -203,12 +169,10 @@ public class TrustAnchorTests
     public void Withdraw_starts_from_lowest_non_zero_weight_agent()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 20);
-        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 1);
-        fixture.SetRemainingAgentConfigs(2, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
+        fixture.RegisterAgent(fixture.AgentHashes[1], fixture.AgentCandidate(1), "agent-1");
+        fixture.SetAgentVotingById(0, 20);
+        fixture.SetAgentVotingById(1, 1);
 
         fixture.MintNeo(fixture.UserHash, 2);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
@@ -224,17 +188,15 @@ public class TrustAnchorTests
     public void Rebalance_moves_neo_and_votes_per_weights()
     {
         var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 10);
-        fixture.SetAgentConfig(1, fixture.AgentCandidate(1), 11);
-        fixture.SetRemainingAgentConfigs(2, weight: 0);
-        fixture.FinalizeConfig();
+        fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
+        fixture.RegisterAgent(fixture.AgentHashes[1], fixture.AgentCandidate(1), "agent-1");
+        fixture.SetAgentVotingById(0, 10);
+        fixture.SetAgentVotingById(1, 11);
 
         fixture.MintNeo(fixture.UserHash, 6);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 6);
 
-        fixture.RebalanceVotes();
+        fixture.CallFrom(fixture.OwnerHash, "rebalanceVotes");
 
         Assert.Equal(fixture.AgentCandidate(0), fixture.AgentLastVote(0));
         Assert.Equal(fixture.AgentCandidate(1), fixture.AgentLastVote(1));

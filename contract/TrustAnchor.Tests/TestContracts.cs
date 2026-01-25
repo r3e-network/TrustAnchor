@@ -115,51 +115,34 @@ public sealed class TrustAnchorFixture
         return CallContract<T>(TrustHash, operation, args);
     }
 
-    public void SetAgent(int index, UInt160 agent)
+    public void RegisterAgent(UInt160 agent, ECPoint target, string name)
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "setAgent", new BigInteger(index), agent);
+        Invoke(TrustHash, "registerAgent", agent, target, name);
     }
 
-    public void SetAllAgents()
+    public void UpdateAgentNameById(int index, string name)
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        for (int i = 0; i < _agentHashes.Length; i++)
-        {
-            Invoke(TrustHash, "setAgent", new BigInteger(i), _agentHashes[i]);
-        }
+        Invoke(TrustHash, "updateAgentNameById", new BigInteger(index), name);
     }
 
-    public void BeginConfig()
+    public void UpdateAgentTargetById(int index, ECPoint target)
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "beginConfig");
+        Invoke(TrustHash, "updateAgentTargetById", new BigInteger(index), target);
     }
 
-    public void SetAgentConfig(int index, ECPoint candidate, BigInteger weight)
+    public void SetAgentVotingById(int index, BigInteger amount)
     {
         _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "setAgentConfig", new BigInteger(index), candidate, weight);
+        Invoke(TrustHash, "setAgentVotingById", new BigInteger(index), amount);
     }
 
-    public void SetRemainingAgentConfigs(int startIndex, BigInteger weight)
+    public void RegisterSingleAgentWithVoting(int index, BigInteger votingAmount)
     {
-        for (int i = startIndex; i < _agentHashes.Length; i++)
-        {
-            SetAgentConfig(i, AgentCandidate(i), weight);
-        }
-    }
-
-    public void FinalizeConfig()
-    {
-        _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "finalizeConfig");
-    }
-
-    public void RebalanceVotes()
-    {
-        _engine.SetTransactionSigners(new[] { _ownerSigner });
-        Invoke(TrustHash, "rebalanceVotes");
+        RegisterAgent(_agentHashes[index], AgentCandidate(index), $"agent-{index}");
+        SetAgentVotingById(index, votingAmount);
     }
 
     public void MintNeo(UInt160 to, BigInteger amount)
