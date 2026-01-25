@@ -266,4 +266,27 @@ public class TrustAnchorTests
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "updateAgentNameById", 1, "a0"));
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "updateAgentTargetById", 1, fixture.AgentCandidate(0)));
     }
+
+    [Fact]
+    public void SetAgentVoting_by_name_and_target()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[0], fixture.AgentCandidate(0), "a0");
+
+        fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByName", "a0", new BigInteger(7));
+        Assert.Equal(new BigInteger(7), fixture.Call<BigInteger>("agentVoting", 0));
+
+        fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByTarget", fixture.AgentCandidate(0), new BigInteger(9));
+        Assert.Equal(new BigInteger(9), fixture.Call<BigInteger>("agentVoting", 0));
+    }
+
+    [Fact]
+    public void SetAgentVoting_by_name_or_target_unknown_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", fixture.AgentHashes[0], fixture.AgentCandidate(0), "a0");
+
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByName", "missing", new BigInteger(1)));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByTarget", fixture.AgentCandidate(1), new BigInteger(1)));
+    }
 }
