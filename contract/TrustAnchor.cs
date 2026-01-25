@@ -933,6 +933,7 @@ namespace TrustAnchor
         public static void WithdrawGAS(BigInteger amount)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            ExecutionEngine.Assert(IsPaused());
             ExecutionEngine.Assert(amount > BigInteger.Zero);
             ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, Owner(), amount));
         }

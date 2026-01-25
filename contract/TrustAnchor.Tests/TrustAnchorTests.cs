@@ -210,4 +210,17 @@ public class TrustAnchorTests
         Assert.Equal(new BigInteger(2), fixture.NeoBalance(fixture.AgentHashes[0]));
         Assert.Equal(new BigInteger(4), fixture.NeoBalance(fixture.AgentHashes[1]));
     }
+
+    [Fact]
+    public void WithdrawGAS_requires_pause()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.MintGas(fixture.OtherHash, 2);
+        fixture.GasTransfer(fixture.OtherHash, fixture.TrustHash, 1);
+
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1)));
+
+        fixture.CallFrom(fixture.OwnerHash, "pause");
+        fixture.CallFrom(fixture.OwnerHash, "withdrawGAS", new BigInteger(1));
+    }
 }
