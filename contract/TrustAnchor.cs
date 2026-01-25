@@ -601,6 +601,20 @@ namespace TrustAnchor
             new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Put((ByteString)index, amount);
         }
 
+        /// <summary>Set agent voting amount by name (priority only)</summary>
+        public static void SetAgentVotingByName(string name, BigInteger amount)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            SetAgentVotingById(GetAgentIdByName(name), amount);
+        }
+
+        /// <summary>Set agent voting amount by target public key (priority only)</summary>
+        public static void SetAgentVotingByTarget(ECPoint target, BigInteger amount)
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            SetAgentVotingById(GetAgentIdByTarget(target), amount);
+        }
+
         /// <summary>Vote using agent id</summary>
         public static void VoteAgentById(BigInteger index)
         {
