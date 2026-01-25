@@ -325,13 +325,7 @@ public class TestAgent : SmartContract
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         var sourcePath = Path.Combine(repoRoot, "contract", "TrustAnchor.cs");
         var source = File.ReadAllText(sourcePath);
-        var ownerLiteral = ownerHash.ToString();
-        var patched = source.Replace("[TODO]: ARGS", ownerLiteral);
-        if (patched == source)
-        {
-            patched = patched.Replace("0x36f7b411fdf54a0495e21360836e90b1f2a428f9", ownerLiteral);
-        }
-        return patched;
+        return source.Replace("[TODO]: ARGS", ownerHash.ToString());
     }
 
     private static (NefFile nef, ContractManifest manifest) CompileSource(string source)

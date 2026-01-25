@@ -16,7 +16,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 9.0.x
 
       - name: Install Neo Compiler
         run: dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
@@ -27,11 +27,11 @@ jobs:
           dotnet build
           dotnet test --no-build --verbosity normal
 
-      - name: Build TrustAnchor Projects
+      - name: Build TEE Projects
         run: |
-          dotnet build TrustAnchor/LibHelper/LibHelper.csproj
-          dotnet build TrustAnchor/LibRPC/LibRPC.csproj
-          dotnet build TrustAnchor/LibWallet/LibWallet.csproj
-          dotnet build TrustAnchor/KeyGenerator/KeyGenerator.csproj
-          dotnet build TrustAnchor/TrustAnchorClaimer/TrustAnchorClaimer.csproj
-          dotnet build TrustAnchor/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj
+          dotnet build TEE/LibHelper/LibHelper.csproj
+          dotnet build TEE/LibRPC/LibRPC.csproj
+          dotnet build TEE/LibWallet/LibWallet.csproj
+          dotnet build TEE/KeyGenerator/KeyGenerator.csproj
+          dotnet build TEE/TrustAnchorClaimer/TrustAnchorClaimer.csproj
+          dotnet build TEE/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj

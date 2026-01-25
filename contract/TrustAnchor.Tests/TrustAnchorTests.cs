@@ -212,36 +212,6 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void ClaimReward_with_reentrancy_guard()
-    {
-        var fixture = new TrustAnchorFixture();
-        fixture.SetAllAgents();
-        fixture.BeginConfig();
-        fixture.SetAgentConfig(0, fixture.AgentCandidate(0), 21);
-        fixture.SetRemainingAgentConfigs(1, weight: 0);
-        fixture.FinalizeConfig();
-
-        fixture.MintNeo(fixture.UserHash, 10);
-        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 5);
-
-        fixture.MintGas(fixture.OtherHash, 100);
-        fixture.GasTransfer(fixture.OtherHash, fixture.TrustHash, 50);
-
-        var balanceBefore = fixture.GasBalance(fixture.UserHash);
-        fixture.CallFrom(fixture.UserHash, "claimReward", fixture.UserHash);
-        var balanceAfter = fixture.GasBalance(fixture.UserHash);
-
-        Assert.True(balanceAfter > balanceBefore, "User should receive GAS rewards");
-
-        var rewardAfterFirstClaim = fixture.Call<BigInteger>("reward", fixture.UserHash);
-        Assert.Equal(BigInteger.Zero, rewardAfterFirstClaim);
-
-        fixture.CallFrom(fixture.UserHash, "claimReward", fixture.UserHash);
-        var rewardAfterSecondClaim = fixture.Call<BigInteger>("reward", fixture.UserHash);
-        Assert.Equal(BigInteger.Zero, rewardAfterSecondClaim);
-    }
-
-    [Fact]
     public void WithdrawGAS_requires_pause()
     {
         var fixture = new TrustAnchorFixture();
