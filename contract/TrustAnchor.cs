@@ -120,6 +120,9 @@ namespace TrustAnchor
         /// <summary>Get current config version</summary>
         public static BigInteger ConfigVersion() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXCONFIGVERSION });
 
+        /// <summary>Get pause state (exposed for agents)</summary>
+        public static bool isPaused() => IsPaused();
+
         /// <summary>Get the current RPS (Reward Per Stake) accumulator value</summary>
         /// <returns>Cumulative reward per token (scaled by RPS_SCALE)</returns>
         public static BigInteger RPS() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED });

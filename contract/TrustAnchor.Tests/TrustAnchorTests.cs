@@ -22,6 +22,14 @@ public class TrustAnchorTests
     }
 
     [Fact]
+    public void IsPaused_is_exposed_for_agents()
+    {
+        var fixture = new TrustAnchorFixture();
+        var paused = fixture.Call<bool>("isPaused");
+        Assert.False(paused);
+    }
+
+    [Fact]
     public void Neo_deposit_increases_stake_and_totalstake()
     {
         var fixture = new TrustAnchorFixture();
