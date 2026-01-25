@@ -6,3 +6,6 @@
 
 # Neo Express local chain data
 .neo-express/
+
+# TrustAnchor ops env files
+TrustAnchor/.env*
