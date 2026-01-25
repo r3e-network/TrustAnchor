@@ -86,98 +86,15 @@ echo "=============================================="
 echo "PHASE 2: Configuring Agents"
 echo "=============================================="
 
-# Now configure Agent 1 with weight 21 and vote target
-echo "Configuring Agent 1..."
-
-# Create configuration script
-cat > /tmp/configure-agent.cs <<'CSHARPEOF'
-using System;
-using System.Numerics;
-using Neo;
-using Neo.SmartContract.Native;
-using Neo.VM;
-using Neo.Wallets;
-
-namespace ConfigAgent
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            string trustAnchorHash = args[0];
-            string agentIndex = args[1];
-            string voteTarget = args[2];
-            string weight = args[3] ?? "21";
-            string wif = args[4];
-            string rpc = args[5] ?? "https://n3seed2.ngd.network:10332";
-
-            var keypair = Neo.Network.RPC.Utility.GetKeyPair(wif);
-            var deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
-            
-            var signers = new[] {
-                new Signer { 
-                    Scopes = WitnessScope.Global, 
-                    Account = deployer
-                }
-            };
-
-            var trustAnchor = UInt160.Parse(trustAnchorHash);
-
-            Console.Error.WriteLine($"Configuring Agent {agentIndex}...");
-            Console.Error.WriteLine($"TrustAnchor: {trustAnchor}");
-            Console.Error.WriteLine($"Vote Target: {voteTarget}");
-            Console.Error.WriteLine($"Weight: {weight}");
-
-            // Parse vote target as ECPoint
-            byte[] voteBytes = Convert.FromHexString(voteTarget);
-            var ecPoint = new Neo.Cryptography.ECC.ECPoint(voteBytes);
-
-            // Begin config
-            var beginScript = new ScriptBuilder();
-            beginScript.EmitPush("beginConfig");
-            beginScript.EmitPush(trustAnchor);
-            beginScript.EmitSysCall(0x62e1b114);
-            var txHash = beginScript.ToArray().SendTx(signers, keypair, rpc);
-            Console.Error.WriteLine($"BeginConfig TX: {txHash}");
-
-            // Set agent config
-            var configScript = new ScriptBuilder();
-            configScript.EmitPush(BigInteger.Parse(weight));
-            configScript.EmitPush(ecPoint);
-            configScript.EmitPush(BigInteger.Parse(agentIndex));
-            configScript.EmitPush("setAgentConfig");
-            configScript.EmitPush(trustAnchor);
-            configScript.EmitSysCall(0x62e1b114);
-            txHash = configScript.ToArray().SendTx(signers, keypair, rpc);
-            Console.Error.WriteLine($"SetAgentConfig TX: {txHash}");
-
-            // Finalize config
-            var finalizeScript = new ScriptBuilder();
-            finalizeScript.EmitPush("finalizeConfig");
-            finalizeScript.EmitPush(trustAnchor);
-            finalizeScript.EmitSysCall(0x62e1b114);
-            txHash = finalizeScript.ToArray().SendTx(signers, keypair, rpc);
-            Console.Error.WriteLine($"FinalizeConfig TX: {txHash}");
-
-            Console.WriteLine("SUCCESS");
-        }
-    }
-
-    static class Extensions
-    {
-        public static UInt256 SendTx(this byte[] script, Signer[] signers, KeyPair keypair, string rpc)
-        {
-            var uri = new Uri(rpc);
-            var settings = Neo.Network.RPC.ProtocolSettings.Load("/dev/stdin");
-            var cli = new Neo.Network.RPC.RpcClient(uri, null, null, settings);
-            var factory = new Neo.Network.RPC.TransactionManagerFactory(cli);
-            var txMgr = factory.MakeTransactionAsync(script, signers).GetAwaiter().GetResult();
-            var signedTx = txMgr.AddSignature(keypair).SignAsync().GetAwaiter().GetResult();
-            return cli.SendRawTransactionAsync(signedTx).GetAwaiter().GetResult();
-        }
-    }
-}
-CSHARPEOF
+# Configure Agent 0 with vote target and voting amount
+echo "Configuring Agent 0..."
+dotnet run --project ConfigureAgent --configuration Release -- \
+    "$DEPLOYER_WIF" \
+    "$TRUSTANCHOR_HASH" \
+    0 \
+    "$VOTE_TARGET" \
+    "agent-0" \
+    1
 
 echo ""
 echo "=============================================="

@@ -31,14 +31,16 @@ namespace ConfigureAgent
         {
             string wif = args.Length > 0 ? args[0] : Environment.GetEnvironmentVariable("WIF");
             string trustAnchorHash = args.Length > 1 ? args[1] : Environment.GetEnvironmentVariable("TRUSTANCHOR");
-            int agentIndex = args.Length > 2 ? int.Parse(args[2]) : 1;
-            string voteTarget = args.Length > 3 ? args[3] : "036d13bdb7da325738167f2adde14e424e8cbfebc5501437a22f4e7668a3116168";
-            BigInteger weight = args.Length > 4 ? BigInteger.Parse(args[4]) : 21;
+            int agentIndex = args.Length > 2 ? int.Parse(args[2]) : 0;
+            string voteTarget = args.Length > 3 ? args[3] : Environment.GetEnvironmentVariable("VOTE_TARGET");
+            string name = args.Length > 4 ? args[4] : $"agent-{agentIndex}";
+            BigInteger votingAmount = args.Length > 5 ? BigInteger.Parse(args[5]) : BigInteger.One;
 
             Console.WriteLine($"=== Configuring Agent {agentIndex} ===");
             Console.WriteLine($"TrustAnchor: {trustAnchorHash}");
             Console.WriteLine($"Vote Target: {voteTarget}");
-            Console.WriteLine($"Weight: {weight}");
+            Console.WriteLine($"Name: {name}");
+            Console.WriteLine($"Voting Amount: {votingAmount}");
 
             var keypair = Neo.Network.RPC.Utility.GetKeyPair(wif);
             var deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
@@ -57,35 +59,38 @@ namespace ConfigureAgent
 
             Console.WriteLine($"\nDeployer: {deployer}");
 
-            // Begin config
-            Console.WriteLine("\nStep 1: Beginning configuration...");
-            var beginScript = new ScriptBuilder();
-            beginScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("beginConfig"));
-            beginScript.EmitPush(trustAnchor.GetSpan());
-            beginScript.EmitSysCall(0x62e1b114);
-            var txHash = SendTx(beginScript.ToArray(), signers, keypair);
-            Console.WriteLine($"BeginConfig TX: {txHash}");
+            // Update target
+            Console.WriteLine($"\nStep 1: Updating Agent {agentIndex} target...");
+            var targetScript = new ScriptBuilder();
+            targetScript.EmitPush(voteBytes);
+            targetScript.EmitPush(new BigInteger(agentIndex));
+            targetScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("updateAgentTargetById"));
+            targetScript.EmitPush(trustAnchor.GetSpan());
+            targetScript.EmitSysCall(0x62e1b114);
+            var txHash = SendTx(targetScript.ToArray(), signers, keypair);
+            Console.WriteLine($"UpdateAgentTargetById TX: {txHash}");
 
-            // Set agent config
-            Console.WriteLine($"\nStep 2: Setting Agent {agentIndex} config...");
-            var configScript = new ScriptBuilder();
-            configScript.EmitPush(weight);
-            configScript.EmitPush(voteBytes);
-            configScript.EmitPush(new BigInteger(agentIndex));
-            configScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("setAgentConfig"));
-            configScript.EmitPush(trustAnchor.GetSpan());
-            configScript.EmitSysCall(0x62e1b114);
-            txHash = SendTx(configScript.ToArray(), signers, keypair);
-            Console.WriteLine($"SetAgentConfig TX: {txHash}");
+            // Update name
+            Console.WriteLine($"\nStep 2: Updating Agent {agentIndex} name...");
+            var nameScript = new ScriptBuilder();
+            nameScript.EmitPush(System.Text.Encoding.UTF8.GetBytes(name));
+            nameScript.EmitPush(new BigInteger(agentIndex));
+            nameScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("updateAgentNameById"));
+            nameScript.EmitPush(trustAnchor.GetSpan());
+            nameScript.EmitSysCall(0x62e1b114);
+            txHash = SendTx(nameScript.ToArray(), signers, keypair);
+            Console.WriteLine($"UpdateAgentNameById TX: {txHash}");
 
-            // Finalize config
-            Console.WriteLine("\nStep 3: Finalizing configuration...");
-            var finalizeScript = new ScriptBuilder();
-            finalizeScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("finalizeConfig"));
-            finalizeScript.EmitPush(trustAnchor.GetSpan());
-            finalizeScript.EmitSysCall(0x62e1b114);
-            txHash = SendTx(finalizeScript.ToArray(), signers, keypair);
-            Console.WriteLine($"FinalizeConfig TX: {txHash}");
+            // Set voting amount
+            Console.WriteLine($"\nStep 3: Setting Agent {agentIndex} voting amount...");
+            var votingScript = new ScriptBuilder();
+            votingScript.EmitPush(votingAmount);
+            votingScript.EmitPush(new BigInteger(agentIndex));
+            votingScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("setAgentVotingById"));
+            votingScript.EmitPush(trustAnchor.GetSpan());
+            votingScript.EmitSysCall(0x62e1b114);
+            txHash = SendTx(votingScript.ToArray(), signers, keypair);
+            Console.WriteLine($"SetAgentVotingById TX: {txHash}");
 
             Console.WriteLine($"\n=== Agent {agentIndex} Configuration Complete ===");
         }

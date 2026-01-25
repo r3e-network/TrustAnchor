@@ -89,18 +89,13 @@ namespace TrustAnchorDeployer
             // Register agents
             for (int i = 0; i < agentHashes.Count; i++)
             {
-                var txHash = InvokeContract(trustAnchorHash, "setAgent", i, agentHashes[i]);
+                var target = BuildPlaceholderTarget(i);
+                var name = $"agent-{i}";
+                var txHash = InvokeContract(trustAnchorHash, "registerAgent", agentHashes[i], target, name);
                 Console.WriteLine($"Agent {i} registered: {txHash}");
-            }
 
-            // Configure
-            InvokeContract(trustAnchorHash, "beginConfig");
-            for (int i = 0; i < MAXAGENTS; i++)
-            {
-                InvokeContract(trustAnchorHash, "setAgentConfig", i, new byte[33], BigInteger.One);
+                InvokeContract(trustAnchorHash, "setAgentVotingById", i, BigInteger.One);
             }
-            var finalizeTx = InvokeContract(trustAnchorHash, "finalizeConfig");
-            Console.WriteLine($"FinalizeConfig: {finalizeTx}");
 
             Console.WriteLine("=== Deployment Complete ===");
         }
@@ -156,6 +151,9 @@ namespace TrustAnchorDeployer
                     case int i:
                         sb.EmitPush(i);
                         break;
+                    case string s:
+                        sb.EmitPush(s);
+                        break;
                     case byte[] bytes:
                         sb.EmitPush(bytes);
                         break;
@@ -172,6 +170,13 @@ namespace TrustAnchorDeployer
             sb.EmitSysCall(0x627C3A32); // System.Contract.Call
             
             return sb.ToArray();
+        }
+
+        static byte[] BuildPlaceholderTarget(int index)
+        {
+            var target = new byte[33];
+            target[^1] = (byte)(index + 1);
+            return target;
         }
 
         static string SendTransaction(byte[] script)
