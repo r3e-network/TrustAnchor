@@ -268,7 +268,7 @@ namespace TrustAnchor
             // ========================================
             if (Runtime.CallingScriptHash == NEO.Hash && amount > BigInteger.Zero)
             {
-                AssertConfigReady();
+                ExecutionEngine.Assert(AgentCount() > BigInteger.Zero);
 
                 BigInteger stakeAmount = amount;
                 StorageMap stakeMap = new(Storage.CurrentContext, PREFIXSTAKE);
@@ -292,9 +292,8 @@ namespace TrustAnchor
                     }
                 }
 
-                // Route NEO to the agent with highest weight
-                // This ensures voting power is distributed according to configured weights
-                int targetIndex = SelectHighestWeightAgentIndex();
+                // Route NEO to the agent with highest voting amount (priority only)
+                int targetIndex = SelectHighestVotingAgentIndex();
                 UInt160 targetAgent = Agent(targetIndex);
                 ExecutionEngine.Assert(targetAgent != UInt160.Zero);
 
@@ -1222,6 +1221,29 @@ namespace TrustAnchor
                     bestIndex = i;
                 }
             }
+            ExecutionEngine.Assert(bestIndex >= 0);
+            return bestIndex;
+        }
+
+        /// <summary>Select agent with highest voting amount (priority only)</summary>
+        private static int SelectHighestVotingAgentIndex()
+        {
+            int count = (int)AgentCount();
+            ExecutionEngine.Assert(count > 0);
+
+            BigInteger bestVoting = BigInteger.MinusOne;
+            int bestIndex = -1;
+
+            for (int i = 0; i < count; i++)
+            {
+                BigInteger voting = AgentVoting(i);
+                if (voting > bestVoting || (voting == bestVoting && (bestIndex < 0 || i < bestIndex)))
+                {
+                    bestVoting = voting;
+                    bestIndex = i;
+                }
+            }
+
             ExecutionEngine.Assert(bestIndex >= 0);
             return bestIndex;
         }

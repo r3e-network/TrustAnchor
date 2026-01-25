@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Numerics;
 using System.Runtime.Loader;
@@ -177,6 +178,27 @@ public sealed class TrustAnchorFixture
         if (result != true) throw new InvalidOperationException("GAS transfer failed");
     }
 
+    public void InvokeNeoPayment(UInt160 from, BigInteger amount)
+    {
+        var property = _engine.GetType().GetProperty("OnGetCallingScriptHash",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (property is null)
+            throw new InvalidOperationException("OnGetCallingScriptHash not found on TestEngine");
+
+        var original = property.GetValue(_engine);
+        var handler = BuildCallingScriptHashHandler(property.PropertyType, GetNeoHash());
+
+        property.SetValue(_engine, handler);
+        try
+        {
+            Invoke(TrustHash, "onNEP17Payment", from, amount, null);
+        }
+        finally
+        {
+            property.SetValue(_engine, original);
+        }
+    }
+
     public BigInteger GasBalance(UInt160 account)
     {
         return _engine.Native.GAS.BalanceOf(account) ?? BigInteger.Zero;
@@ -207,6 +229,26 @@ public sealed class TrustAnchorFixture
         var keyBytes = new byte[32];
         keyBytes[^1] = (byte)(index + 1);
         return new KeyPair(keyBytes).PublicKey;
+    }
+
+    private UInt160 GetNeoHash()
+    {
+        var property = _engine.Native.NEO.GetType().GetProperty("Hash",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (property is null)
+            throw new InvalidOperationException("Hash not found on NEO native contract");
+        return (UInt160)property.GetValue(_engine.Native.NEO)!;
+    }
+
+    private static Delegate BuildCallingScriptHashHandler(Type delegateType, UInt160 hash)
+    {
+        var invoke = delegateType.GetMethod("Invoke") ??
+                     throw new InvalidOperationException("Calling script hash delegate missing Invoke");
+        var parameters = invoke.GetParameters()
+            .Select(p => Expression.Parameter(p.ParameterType, p.Name))
+            .ToArray();
+        var body = Expression.Convert(Expression.Constant(hash), invoke.ReturnType);
+        return Expression.Lambda(delegateType, body, parameters).Compile();
     }
 
     private UInt160 SelectNeoFundingAccount()

@@ -154,18 +154,25 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void Deposit_routes_to_highest_weight_agent()
+    public void Deposit_routes_to_highest_voting_agent()
     {
         var fixture = new TrustAnchorFixture();
         fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");
         fixture.RegisterAgent(fixture.AgentHashes[1], fixture.AgentCandidate(1), "agent-1");
         fixture.SetAgentVotingById(0, 5);
-        fixture.SetAgentVotingById(1, 16);
+        fixture.SetAgentVotingById(1, 7);
 
         fixture.MintNeo(fixture.UserHash, 3);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 2);
 
         Assert.Equal(new BigInteger(2), fixture.NeoBalance(fixture.AgentHashes[1]));
+    }
+
+    [Fact]
+    public void Deposit_without_agents_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        AssertFault(() => fixture.InvokeNeoPayment(fixture.UserHash, 1));
     }
 
     [Fact]
