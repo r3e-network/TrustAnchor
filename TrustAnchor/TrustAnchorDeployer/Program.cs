@@ -20,17 +20,9 @@ namespace TrustAnchorDeployer
 {
     class Program
     {
-        public static readonly string WIF = Environment.GetEnvironmentVariable("WIF");
         private static readonly string OWNER_HASH = Environment.GetEnvironmentVariable("OWNER_HASH");
         private static readonly uint MAXAGENTS = 21;
         private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
-
-        public static readonly KeyPair keypair = Neo.Network.RPC.Utility.GetKeyPair(WIF);
-        private static readonly UInt160 deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
-        public static readonly Signer[] signers = new[] 
-        { 
-            new Signer { Scopes = WitnessScope.Global, Account = deployer } 
-        };
 
         internal static string ResolveContractsDir()
         {
@@ -61,14 +53,33 @@ namespace TrustAnchorDeployer
             return string.IsNullOrWhiteSpace(overridePath) ? "nccs" : overridePath;
         }
 
+        private static KeyPair GetKeyPair()
+        {
+            var wif = Environment.GetEnvironmentVariable("WIF");
+            if (string.IsNullOrWhiteSpace(wif))
+            {
+                throw new InvalidOperationException("WIF is required. Set WIF env var.");
+            }
+            return Neo.Network.RPC.Utility.GetKeyPair(wif);
+        }
+
+        private static (KeyPair keypair, UInt160 deployer, Signer[] signers) GetWallet()
+        {
+            var keypair = GetKeyPair();
+            var deployer = Contract.CreateSignatureContract(keypair.PublicKey).ScriptHash;
+            var signers = new[] { new Signer { Scopes = WitnessScope.Global, Account = deployer } };
+            return (keypair, deployer, signers);
+        }
+
         static void Main(string[] args)
         {
+            var (_, deployer, _) = GetWallet();
             Console.WriteLine($"=== TrustAnchor Deployment Tool ===");
             Console.WriteLine($"Deployer: {deployer}");
             Console.WriteLine($"RPC: {RPC}");
 
             // Deploy TrustAnchor
-            var trustAnchorHash = DeployTrustAnchor();
+            var trustAnchorHash = DeployTrustAnchor(deployer);
             Console.WriteLine($"TrustAnchor: {trustAnchorHash}");
 
             // Deploy Agents
@@ -94,7 +105,7 @@ namespace TrustAnchorDeployer
             Console.WriteLine("=== Deployment Complete ===");
         }
 
-        static UInt160 DeployTrustAnchor()
+        static UInt160 DeployTrustAnchor(UInt160 deployer)
         {
             Console.WriteLine("Deploying TrustAnchor...");
             var (nefPath, nefBytes, scriptHash) = CompileContract("TrustAnchor.cs", "TrustAnchor", OWNER_HASH ?? deployer.ToString());
@@ -165,6 +176,7 @@ namespace TrustAnchorDeployer
 
         static string SendTransaction(byte[] script)
         {
+            var (keypair, _, signers) = GetWallet();
             var txMgr = script.TxMgr(signers);
             var signedTx = txMgr.AddSignature(keypair).SignAsync().GetAwaiter().GetResult();
             return signedTx.Send().ToString();
