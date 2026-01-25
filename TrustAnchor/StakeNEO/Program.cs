@@ -1,5 +1,8 @@
 using System;
+using System.Linq;
 using System.Numerics;
+using LibHelper;
+using LibRPC;
 using Neo;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
@@ -11,6 +14,7 @@ namespace StakeNEO
 {
     class Program
     {
+        internal const string StakeOfMethodName = "stakeOf";
         private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
         private static readonly Uri URI = new Uri(RPC);
         private static readonly ProtocolSettings settings = new ProtocolSettings
@@ -33,8 +37,20 @@ namespace StakeNEO
             string trustAnchorHash = args.Length > 1 ? args[1] : Environment.GetEnvironmentVariable("TRUSTANCHOR");
             BigInteger amount = args.Length > 2 ? BigInteger.Parse(args[2]) : new BigInteger(100);
 
+            if (string.IsNullOrWhiteSpace(wif))
+            {
+                throw new InvalidOperationException("WIF is required. Set WIF env var or pass as first argument.");
+            }
+            if (string.IsNullOrWhiteSpace(trustAnchorHash))
+            {
+                throw new InvalidOperationException("TRUSTANCHOR is required. Set TRUSTANCHOR env var or pass as second argument.");
+            }
+            if (amount <= 0)
+            {
+                throw new InvalidOperationException("Amount must be a positive integer.");
+            }
+
             Console.WriteLine($"=== Staking NEO ===");
-            Console.WriteLine($"WIF: {wif.Substring(0, 10)}...");
             Console.WriteLine($"TrustAnchor: {trustAnchorHash}");
             Console.WriteLine($"Amount: {amount} NEO");
 
@@ -83,7 +99,7 @@ namespace StakeNEO
             // Check TrustAnchor stake
             Console.WriteLine("\nChecking TrustAnchor stake...");
             var totalStake = trustAnchor.MakeScript("totalStake").Call().Single().GetInteger();
-            var userStake = trustAnchor.MakeScript(" stakeOf", user).Call().Single().GetInteger();
+            var userStake = trustAnchor.MakeScript(StakeOfMethodName, user).Call().Single().GetInteger();
             Console.WriteLine($"Total Stake: {totalStake}");
             Console.WriteLine($"User Stake: {userStake}");
 

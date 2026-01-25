@@ -5,6 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Neo" Version="3.8.1" />
-    <PackageReference Include="Neo.Network.RPC" Version="3.8.1" />
+    <PackageReference Include="Neo.Network.RPC.RpcClient" Version="3.8.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\\LibHelper\\LibHelper.csproj" />
+    <ProjectReference Include="..\\LibRPC\\LibRPC.csproj" />
   </ItemGroup>
 </Project>

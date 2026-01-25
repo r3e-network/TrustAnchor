@@ -13,6 +13,5 @@
   <ItemGroup>
     <ProjectReference Include="..\\StakeNEO\\StakeNEO.csproj" />
     <ProjectReference Include="..\\LibWallet\\LibWallet.csproj" />
-    <ProjectReference Include="..\\TrustAnchorDeployer\\TrustAnchorDeployer.csproj" />
   </ItemGroup>
 </Project>
