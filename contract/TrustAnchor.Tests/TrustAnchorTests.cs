@@ -189,7 +189,7 @@ public class TrustAnchorTests
     }
 
     [Fact]
-    public void Withdraw_starts_from_lowest_non_zero_weight_agent()
+    public void Withdraw_starts_from_lowest_non_zero_voting_agent()
     {
         var fixture = new TrustAnchorFixture();
         fixture.RegisterAgent(fixture.AgentHashes[0], fixture.AgentCandidate(0), "agent-0");

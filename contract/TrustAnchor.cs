@@ -420,8 +420,6 @@ namespace TrustAnchor
             // This ensures user earns rewards up to the withdrawal moment
             SyncAccount(account);
 
-            AssertConfigReady();
-
             BigInteger stakeAmount = neoAmount;
             StorageMap stakeMap = new(Storage.CurrentContext, PREFIXSTAKE);
             BigInteger stake = (BigInteger)stakeMap.Get(account);
@@ -447,12 +445,13 @@ namespace TrustAnchor
             //   Result: Weights become [5,4,3,1,0] (high weights preserved)
 
             BigInteger remaining = neoAmount;
-            bool[] used = new bool[MAXAGENTS];  // Track which agents we've already withdrawn from
+            int count = (int)AgentCount();
+            bool[] used = new bool[count];  // Track which agents we've already withdrawn from
 
-            for (int step = 0; step < MAXAGENTS && remaining > BigInteger.Zero; step++)
+            for (int step = 0; step < count && remaining > BigInteger.Zero; step++)
             {
                 // Select the lowest weight agent that hasn't been used yet
-                int selected = SelectLowestWeightAgentIndex(used);
+                int selected = SelectLowestVotingAgentIndex(used);
                 if (selected < 0) break;  // No more agents available
                 used[selected] = true;
 
@@ -1309,6 +1308,28 @@ namespace TrustAnchor
                 {
                     selected = i;
                     selectedWeight = weight;
+                }
+            }
+            return selected;
+        }
+
+        /// <summary>Select agent with lowest voting amount (excluding already used ones)</summary>
+        private static int SelectLowestVotingAgentIndex(bool[] used)
+        {
+            int selected = -1;
+            BigInteger selectedVoting = BigInteger.Zero;
+            bool hasSelected = false;
+
+            for (int i = 0; i < used.Length; i++)
+            {
+                if (used[i]) continue;
+                BigInteger voting = AgentVoting(i);
+
+                if (!hasSelected || voting < selectedVoting || (voting == selectedVoting && i < selected))
+                {
+                    selected = i;
+                    selectedVoting = voting;
+                    hasSelected = true;
                 }
             }
             return selected;
