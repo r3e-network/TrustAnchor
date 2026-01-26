@@ -42,6 +42,8 @@ public class DocsTests
         return normalized.Contains("/.git/", StringComparison.Ordinal)
             || normalized.Contains("/bin/", StringComparison.Ordinal)
             || normalized.Contains("/obj/", StringComparison.Ordinal)
+            || normalized.Contains("/.worktrees/", StringComparison.Ordinal)
+            || normalized.Contains("/worktrees/", StringComparison.Ordinal)
             || normalized.EndsWith("/TrustAnchor/TrustAnchorOps.Tests/DocsTests.cs", StringComparison.Ordinal);
     }
 
