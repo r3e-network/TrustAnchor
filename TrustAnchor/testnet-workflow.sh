@@ -106,6 +106,7 @@ cat > /tmp/stake-neo.cs <<'CSHARPEOF'
 using System;
 using System.Numerics;
 using Neo;
+using Neo.Extensions;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
@@ -140,12 +141,7 @@ namespace StakeNEO
 
             // Transfer NEO to TrustAnchor (this stakes it)
             var script = new ScriptBuilder();
-            script.EmitPush(neoAmount);
-            script.EmitPush(trustAnchor);
-            script.EmitPush(user);
-            script.EmitPush("transfer");
-            script.EmitPush(Neo.SmartContract.Native.NativeContract.NEO.Hash);
-            script.EmitSysCall(0x62e1b114);
+            Neo.Extensions.ScriptBuilderExtensions.EmitDynamicCall(script, NativeContract.NEO.Hash, "transfer", user, trustAnchor, neoAmount, null);
 
             var uri = new Uri(rpc);
             var settings = Neo.Network.RPC.ProtocolSettings.Load("/dev/stdin");
@@ -172,6 +168,7 @@ cat > /tmp/verify-deployment.cs <<'CSHARPEOF'
 using System;
 using System.Numerics;
 using Neo;
+using Neo.Extensions;
 using Neo.SmartContract.Native;
 using Neo.VM;
 using Neo.Wallets;
@@ -193,7 +190,7 @@ namespace VerifyDeployment
             // Get contract info
             try
             {
-                var owner = NativeContract.ContractManagement.Hash.MakeScript("getOwner", trustAnchor).Call().Single();
+                var owner = trustAnchor.MakeScript("owner").Call().Single();
                 Console.WriteLine($"Contract Owner: {owner}");
             }
             catch (Exception ex)

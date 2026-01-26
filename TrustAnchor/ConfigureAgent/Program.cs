@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Neo;
+using Neo.Extensions;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -11,6 +12,10 @@ namespace ConfigureAgent
 {
     class Program
     {
+        internal const string UpdateTargetMethod = "updateAgentTargetById";
+        internal const string UpdateNameMethod = "updateAgentNameById";
+        internal const string SetVotingMethod = "setAgentVotingById";
+
         private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
         private static readonly Uri URI = new Uri(RPC);
         private static readonly ProtocolSettings settings = new ProtocolSettings
@@ -62,33 +67,21 @@ namespace ConfigureAgent
             // Update target
             Console.WriteLine($"\nStep 1: Updating Agent {agentIndex} target...");
             var targetScript = new ScriptBuilder();
-            targetScript.EmitPush(voteBytes);
-            targetScript.EmitPush(new BigInteger(agentIndex));
-            targetScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("updateAgentTargetById"));
-            targetScript.EmitPush(trustAnchor.GetSpan());
-            targetScript.EmitSysCall(0x62e1b114);
+            targetScript.EmitDynamicCall(trustAnchor, UpdateTargetMethod, new BigInteger(agentIndex), voteBytes);
             var txHash = SendTx(targetScript.ToArray(), signers, keypair);
             Console.WriteLine($"UpdateAgentTargetById TX: {txHash}");
 
             // Update name
             Console.WriteLine($"\nStep 2: Updating Agent {agentIndex} name...");
             var nameScript = new ScriptBuilder();
-            nameScript.EmitPush(System.Text.Encoding.UTF8.GetBytes(name));
-            nameScript.EmitPush(new BigInteger(agentIndex));
-            nameScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("updateAgentNameById"));
-            nameScript.EmitPush(trustAnchor.GetSpan());
-            nameScript.EmitSysCall(0x62e1b114);
+            nameScript.EmitDynamicCall(trustAnchor, UpdateNameMethod, new BigInteger(agentIndex), name);
             txHash = SendTx(nameScript.ToArray(), signers, keypair);
             Console.WriteLine($"UpdateAgentNameById TX: {txHash}");
 
             // Set voting amount
             Console.WriteLine($"\nStep 3: Setting Agent {agentIndex} voting amount...");
             var votingScript = new ScriptBuilder();
-            votingScript.EmitPush(votingAmount);
-            votingScript.EmitPush(new BigInteger(agentIndex));
-            votingScript.EmitPush(System.Text.Encoding.UTF8.GetBytes("setAgentVotingById"));
-            votingScript.EmitPush(trustAnchor.GetSpan());
-            votingScript.EmitSysCall(0x62e1b114);
+            votingScript.EmitDynamicCall(trustAnchor, SetVotingMethod, new BigInteger(agentIndex), votingAmount);
             txHash = SendTx(votingScript.ToArray(), signers, keypair);
             Console.WriteLine($"SetAgentVotingById TX: {txHash}");
 

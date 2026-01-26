@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\\StakeNEO\\StakeNEO.csproj" />
+    <ProjectReference Include="..\\ConfigureAgent\\ConfigureAgent.csproj" />
     <ProjectReference Include="..\\LibWallet\\LibWallet.csproj" />
     <ProjectReference Include="..\\TrustAnchorDeployer\\TrustAnchorDeployer.csproj" />
   </ItemGroup>

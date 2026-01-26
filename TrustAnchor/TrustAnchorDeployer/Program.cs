@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using LibRPC;
 using Neo;
 using Neo.Cryptography;
+using Neo.Extensions;
 using Neo.IO;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
@@ -140,35 +141,7 @@ namespace TrustAnchorDeployer
         static byte[] BuildScript(UInt160 contract, string method, params object[] args)
         {
             var sb = new ScriptBuilder();
-            
-            foreach (var arg in args.Reverse())
-            {
-                switch (arg)
-                {
-                    case BigInteger bi:
-                        sb.EmitPush(bi);
-                        break;
-                    case int i:
-                        sb.EmitPush(i);
-                        break;
-                    case string s:
-                        sb.EmitPush(s);
-                        break;
-                    case byte[] bytes:
-                        sb.EmitPush(bytes);
-                        break;
-                    case UInt160 u:
-                        sb.EmitPush(u.GetSpan());
-                        break;
-                    default:
-                        throw new NotSupportedException(arg.GetType().ToString());
-                }
-            }
-            
-            sb.EmitPush(method);
-            sb.EmitPush(contract.GetSpan());
-            sb.EmitSysCall(0x627C3A32); // System.Contract.Call
-            
+            sb.EmitDynamicCall(contract, method, args);
             return sb.ToArray();
         }
 
@@ -190,12 +163,7 @@ namespace TrustAnchorDeployer
         static string SendTransaction(byte[] nef, string manifest)
         {
             var sb = new ScriptBuilder();
-            sb.EmitPush(System.Text.Encoding.UTF8.GetBytes(manifest));
-            sb.EmitPush(nef);
-            sb.EmitPush("deploy");
-            sb.EmitPush(NativeContract.ContractManagement.Hash.GetSpan());
-            sb.EmitSysCall(0x627C3A32);
-            
+            sb.EmitDynamicCall(NativeContract.ContractManagement.Hash, "deploy", nef, manifest);
             return SendTransaction(sb.ToArray());
         }
 

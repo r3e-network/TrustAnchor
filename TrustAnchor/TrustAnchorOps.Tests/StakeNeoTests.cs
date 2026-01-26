@@ -33,4 +33,15 @@ public class StakeNeoTests
         Assert.NotNull(field);
         Assert.Equal("stakeOf", field!.GetValue(null));
     }
+
+    [Fact]
+    public void TransferMethodConstant_IsCorrect()
+    {
+        var type = Type.GetType("StakeNEO.Program, StakeNEO");
+        Assert.NotNull(type);
+
+        var field = type!.GetField("TransferMethodName", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(field);
+        Assert.Equal("transfer", field!.GetValue(null));
+    }
 }

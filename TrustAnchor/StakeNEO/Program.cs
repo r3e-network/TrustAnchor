@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
 using System.Numerics;
-using LibHelper;
 using LibRPC;
 using Neo;
+using Neo.Extensions;
 using Neo.Network.P2P.Payloads;
 using Neo.SmartContract;
 using Neo.SmartContract.Native;
@@ -15,6 +15,7 @@ namespace StakeNEO
     class Program
     {
         internal const string StakeOfMethodName = "stakeOf";
+        internal const string TransferMethodName = "transfer";
         private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
         private static readonly Uri URI = new Uri(RPC);
         private static readonly ProtocolSettings settings = new ProtocolSettings
@@ -70,12 +71,7 @@ namespace StakeNEO
             // Transfer NEO to TrustAnchor (this stakes it)
             Console.WriteLine($"\nStaking {amount} NEO to TrustAnchor...");
             var script = new ScriptBuilder();
-            script.EmitPush(amount);
-            script.EmitPush(trustAnchor.GetSpan());
-            script.EmitPush(user.GetSpan());
-            script.EmitPush(System.Text.Encoding.UTF8.GetBytes("transfer"));
-            script.EmitPush(NativeContract.NEO.Hash.GetSpan());
-            script.EmitSysCall(0x62e1b114);
+            script.EmitDynamicCall(NativeContract.NEO.Hash, TransferMethodName, user, trustAnchor, amount, null);
 
             var signers = new[] 
             { 
