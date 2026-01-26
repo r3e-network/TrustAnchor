@@ -1,25 +1,25 @@
-# Remove TEE + Fix Tooling Implementation Plan
+# Remove Legacy Tooling + Fix Tooling Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Remove legacy `TEE/` tooling and make TrustAnchor tooling consistent with current contract APIs and N3 call semantics.
+**Goal:** Remove legacy tooling and make TrustAnchor tooling consistent with current contract APIs and N3 call semantics.
 
-**Architecture:** Delete `TEE/` and all references; fix deploy/config/stake tools to use `EmitDynamicCall` and correct script-hash derivation; add ops tests for input validation and method name constants; keep tests RPC-free.
+**Architecture:** Delete the legacy tooling directory and all references; fix deploy/config/stake tools to use `EmitDynamicCall` and correct script-hash derivation; add ops tests for input validation and method name constants; keep tests RPC-free.
 
 **Tech Stack:** C# (Neo N3 tooling), xUnit (ops tests), shell scripts
 
-### Task 1: Remove `TEE/` and scrub references
+### Task 1: Remove legacy tooling and scrub references
 
 **Files:**
-- Delete: `TEE/`
+- Delete: legacy tooling directory
 - Modify: `README.md`
 - Modify: `SECURITY.md`
 - Modify: `TrustAnchor/README.md`
-- Modify: any scripts/docs referencing TEE (find via `rg -n "TEE"`)
+- Modify: any scripts/docs referencing legacy tooling
 
 **Step 1: Write failing test**
 
-Add a small doc/reference test to ensure no `TEE/` references remain (search-based test).
+Add a small doc/reference test to ensure no legacy tooling references remain (search-based test).
 
 Create `TrustAnchor/TrustAnchorOps.Tests/DocsTests.cs`:
 ```csharp
@@ -35,7 +35,7 @@ public class DocsTests
     {
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
         var content = string.Join("\n", Directory.GetFiles(root, "*.*", SearchOption.AllDirectories));
-        Assert.DoesNotContain("/TEE/", content);
+        Assert.DoesNotContain("/legacy-tooling/", content);
     }
 }
 ```
@@ -45,10 +45,10 @@ public class DocsTests
 Run: `dotnet test TrustAnchor/TrustAnchorOps.Tests/TrustAnchorOps.Tests.csproj --filter "Tee"`
 Expected: FAIL (references still exist / file missing).
 
-**Step 3: Remove TEE directory and references**
+**Step 3: Remove legacy tooling directory and references**
 
-- Delete `TEE/` directory.
-- Remove TEE mentions from docs/scripts.
+- Delete legacy tooling directory.
+- Remove legacy tooling mentions from docs/scripts.
 
 **Step 4: Run test to verify it passes**
 
@@ -59,7 +59,7 @@ Expected: PASS.
 
 ```bash
 git add -A
-git commit -m "chore: remove tee tooling"
+git commit -m "chore: remove legacy tooling"
 ```
 
 ### Task 2: Fix TrustAnchor deployer script-hash derivation
@@ -158,7 +158,7 @@ git add TrustAnchor/ConfigureAgent/Program.cs TrustAnchor/StakeNEO/Program.cs Tr
 git commit -m "fix: align tooling calls with current contract api"
 ```
 
-### Task 4: Update docs to remove TEE and document canonical toolchain
+### Task 4: Update docs to remove legacy tooling references and document canonical toolchain
 
 **Files:**
 - Modify: `README.md`
@@ -167,7 +167,7 @@ git commit -m "fix: align tooling calls with current contract api"
 
 **Step 1: Write failing test**
 
-Add a check in `DocsTests` for `TEE` references removed and TrustAnchor tooling present:
+Add a check in `DocsTests` for legacy tooling references removed and TrustAnchor tooling present:
 ```csharp
 [Fact]
 public void Docs_Reference_TrustAnchor_Tooling()
@@ -185,7 +185,7 @@ Expected: FAIL.
 
 **Step 3: Update docs**
 
-- Remove TEE references.
+- Remove legacy tooling references.
 - Ensure TrustAnchor toolchain and env vars are documented.
 
 **Step 4: Run test to verify it passes**

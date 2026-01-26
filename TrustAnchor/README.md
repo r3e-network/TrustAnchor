@@ -90,7 +90,7 @@ dotnet run --project ConfigureAgent -- \
 ```yaml
 env:
   TRUSTANCHOR: "0x1234...abcd" # Your TrustAnchor contract hash
-  WIF: ${{ secrets.TEEWIF }} # Encrypted wallet WIF
+  WIF: ${{ secrets.WIF }} # Encrypted wallet WIF
   RPC: "https://n3seed2.ngd.network:10332"
   THRESHOLD: "17179869184" # ~17 GAS
   REPRESENTATIVE: "0xabcd...1234"

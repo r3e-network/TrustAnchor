@@ -461,7 +461,7 @@ git commit -m "ci: move and fix ops workflows"
 
 Edits:
 - Branch name `master`
-- Project structure: `TrustAnchor/` ops tooling (note `TEE/` as legacy if kept)
+- Project structure: `TrustAnchor/` ops tooling (note legacy tooling if kept)
 - Adjust build/test instructions to repo layout
 
 **Step 2: Update TrustAnchor/README**
@@ -474,8 +474,8 @@ Edits:
 **Step 3: Update root README**
 
 Edits:
-- Replace/augment TEE section with `TrustAnchor/` ops tools
-- Keep a short note if `TEE/` remains as legacy
+- Replace/augment legacy tooling section with `TrustAnchor/` ops tools
+- Keep a short note if legacy tooling remains
 
 **Step 4: Commit**
 

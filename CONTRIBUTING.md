@@ -78,7 +78,6 @@ TrustAnchor/
 │   ├── TrustAnchorClaimer      # GAS claiming automation
 │   ├── TrustAnchorRepresentative # GAS distribution
 │   └── TrustAnchorDeployer     # Contract deployment
-├── TEE/                 # Legacy ops tools (kept for compatibility)
 ├── docs/               # Documentation
 │   └── security/       # Security audit documents
 └── .github/workflows/  # CI/CD pipelines

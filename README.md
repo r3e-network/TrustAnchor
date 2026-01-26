@@ -45,7 +45,6 @@ TrustAnchor/
 │   ├── TrustAnchorClaimer         # Automated GAS claiming
 │   ├── TrustAnchorRepresentative  # Automated GAS distribution
 │   └── README.md                  # Ops documentation
-├── TEE/                           # Legacy ops tools (kept for compatibility)
 └── .github/workflows/              # CI/CD workflows
 ```
 
@@ -149,7 +148,6 @@ The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational
 
 See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
 
-The [TEE/](TEE/) folder is legacy tooling retained for compatibility.
 
 ## License
 

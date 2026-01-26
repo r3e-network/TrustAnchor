@@ -27,11 +27,12 @@ jobs:
           dotnet build
           dotnet test --no-build --verbosity normal
 
-      - name: Build TEE Projects
+      - name: Build TrustAnchor Ops Projects
         run: |
-          dotnet build TEE/LibHelper/LibHelper.csproj
-          dotnet build TEE/LibRPC/LibRPC.csproj
-          dotnet build TEE/LibWallet/LibWallet.csproj
-          dotnet build TEE/KeyGenerator/KeyGenerator.csproj
-          dotnet build TEE/TrustAnchorClaimer/TrustAnchorClaimer.csproj
-          dotnet build TEE/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj
+          dotnet build TrustAnchor/LibHelper/LibHelper.csproj
+          dotnet build TrustAnchor/LibRPC/LibRPC.csproj
+          dotnet build TrustAnchor/LibWallet/LibWallet.csproj
+          dotnet build TrustAnchor/KeyGenerator/KeyGenerator.csproj
+          dotnet build TrustAnchor/TrustAnchorClaimer/TrustAnchorClaimer.csproj
+          dotnet build TrustAnchor/TrustAnchorRepresentative/TrustAnchorRepresentative.csproj
+          dotnet build TrustAnchor/TrustAnchorDeployer/TrustAnchorDeployer.csproj

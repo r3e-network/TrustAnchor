@@ -1,16 +1,16 @@
-# Remove TEE + Align Tooling Design
+# Remove Legacy Tooling + Align Tooling Design
 
-**Goal:** Remove the legacy `TEE/` tooling entirely and make the remaining TrustAnchor tooling consistent, correct, and production-ready for the current on-chain contract APIs.
+**Goal:** Remove the legacy tooling entirely and make the remaining TrustAnchor tooling consistent, correct, and production-ready for the current on-chain contract APIs.
 
 **Scope**
-- Delete `TEE/` and scrub all references to it across docs/scripts.
+- Delete the legacy tooling directory and scrub all references to it across docs/scripts.
 - Fix TrustAnchor tooling to use current contract methods and correct N3 call semantics.
 - Correct contract script-hash derivation in deployer tools.
 - Add/adjust ops tests to validate input handling and API strings without RPC access.
 
 **Out of Scope**
 - On-chain contract logic changes (no new behavior).
-- CI/CD pipeline changes beyond removing TEE references.
+- CI/CD pipeline changes beyond removing legacy tooling references.
 
 **Architecture Overview**
 - Canonical workflow (supported):
@@ -39,10 +39,10 @@
 - Keep tests RPC-free.
 
 **Docs**
-- Remove all TEE references.
+- Remove all legacy tooling references.
 - Document the TrustAnchor toolchain as the single supported path.
 
 **Success Criteria**
-- `TEE/` removed with no residual references.
+- Legacy tooling removed with no residual references.
 - Tooling compiles, calls valid methods, and computes correct script hashes.
 - Tests pass locally; no RPC required for tests.
