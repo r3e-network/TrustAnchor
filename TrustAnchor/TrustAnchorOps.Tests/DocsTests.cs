@@ -26,6 +26,16 @@ public class DocsTests
         }
     }
 
+    [Fact]
+    public void Docs_Reference_TrustAnchor_Tooling()
+    {
+        var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var readme = File.ReadAllText(Path.Combine(root, "README.md"));
+
+        Assert.Contains("TrustAnchorDeployer", readme);
+        Assert.Contains("ConfigureAgent", readme);
+    }
+
     private static bool IsIgnoredPath(string path)
     {
         var normalized = NormalizePath(path);

@@ -144,6 +144,8 @@ The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational
 
 - **TrustAnchorClaimer** - Automatically claims GAS from Agent contracts
 - **TrustAnchorRepresentative** - Distributes GAS back to stakers
+- **TrustAnchorDeployer** - Deploys TrustAnchor and Agent contracts
+- **ConfigureAgent** - Updates agent target/name/voting amount
 - **KeyGenerator** - Generates secure NEO wallets
 
 See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
