@@ -59,6 +59,7 @@ public sealed class TrustAnchorFixture
 
     public UInt160 AgentHash { get; }
     public IReadOnlyList<UInt160> AgentHashes => _agentHashes;
+    public UInt160 AuthAgentHash { get; private set; }
 
     public TrustAnchorFixture()
     {
@@ -209,6 +210,34 @@ public sealed class TrustAnchorFixture
         return _engine.Native.NEO.BalanceOf(account) ?? BigInteger.Zero;
     }
 
+    public UInt160 DeployAuthAgent()
+    {
+        var agentSource = AuthAgentSource();
+        var (agentNef, agentManifest) = CompileSource(agentSource);
+        var deployer = new UInt160(Enumerable.Repeat((byte)0x42, 20).ToArray());
+        _engine.SetTransactionSigners(new[] { new Signer { Account = deployer, Scopes = WitnessScope.CalledByEntry } });
+        var agentContract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(agentNef, agentManifest, null, null);
+        AuthAgentHash = agentContract.Hash;
+        return AuthAgentHash;
+    }
+
+    public UInt160 AuthAgentLastTransferTo()
+    {
+        return CallContract<UInt160>(AuthAgentHash, "lastTransferTo");
+    }
+
+    public BigInteger AuthAgentLastTransferAmount()
+    {
+        return CallContract<BigInteger>(AuthAgentHash, "lastTransferAmount");
+    }
+
+    public void DrainAgentTo(UInt160 agent, UInt160 to, BigInteger amount)
+    {
+        var signer = new Signer { Account = agent, Scopes = WitnessScope.CalledByEntry };
+        _engine.SetTransactionSigners(new[] { signer });
+        Invoke(agent, "transfer", to, amount);
+    }
+
     public UInt160 AgentLastTransferTo(int index = 0)
     {
         return CallContract<UInt160>(_agentHashes[index], "lastTransferTo");
@@ -328,6 +357,50 @@ public class TestAgent : SmartContract
     {
         var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixVote });
         return value is null ? null : (ECPoint)(byte[])value;
+    }
+
+    public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)
+    {
+    }
+}
+";
+    }
+
+    private static string AuthAgentSource()
+    {
+        return @"
+using System.Numerics;
+using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
+using Neo.SmartContract.Framework.Native;
+using Neo.SmartContract.Framework.Services;
+
+public class AuthAgent : SmartContract
+{
+    private const byte PrefixTransferTo = 0x01;
+    private const byte PrefixTransferAmount = 0x02;
+
+    [InitialValue(""[TODO]: ARGS"", ContractParameterType.Hash160)]
+    private static readonly UInt160 CORE = default;
+
+    public static void Transfer(UInt160 to, BigInteger amount)
+    {
+        Storage.Put(Storage.CurrentContext, new byte[] { PrefixTransferTo }, to);
+        Storage.Put(Storage.CurrentContext, new byte[] { PrefixTransferAmount }, amount);
+        ExecutionEngine.Assert(Runtime.CallingScriptHash == CORE);
+        ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, to, amount));
+    }
+
+    public static UInt160 LastTransferTo()
+    {
+        var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixTransferTo });
+        return value is null ? UInt160.Zero : (UInt160)(byte[])value;
+    }
+
+    public static BigInteger LastTransferAmount()
+    {
+        var value = Storage.Get(Storage.CurrentContext, new byte[] { PrefixTransferAmount });
+        return value is null ? BigInteger.Zero : (BigInteger)value;
     }
 
     public static void OnNEP17Payment(UInt160 from, BigInteger amount, object data)

@@ -289,4 +289,39 @@ public class TrustAnchorTests
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByName", "missing", new BigInteger(1)));
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByTarget", fixture.AgentCandidate(1), new BigInteger(1)));
     }
+
+    [Fact]
+    public void Withdraw_works_with_core_only_agent()
+    {
+        var fixture = new TrustAnchorFixture();
+        var authAgent = fixture.DeployAuthAgent();
+
+        fixture.CallFrom(fixture.OwnerHash, "registerAgent", authAgent, fixture.AgentCandidate(0), "auth-agent");
+        fixture.CallFrom(fixture.OwnerHash, "setAgentVotingById", 0, new BigInteger(1));
+
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
+
+        fixture.CallFrom(fixture.UserHash, "withdraw", fixture.UserHash, 1);
+
+        Assert.Equal(fixture.UserHash, fixture.AuthAgentLastTransferTo());
+        Assert.Equal(new BigInteger(1), fixture.AuthAgentLastTransferAmount());
+    }
+
+    [Fact]
+    public void EmergencyWithdraw_succeeds_with_partial_agent_registry()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.RegisterSingleAgentWithVoting(0, 1);
+
+        fixture.MintNeo(fixture.UserHash, 5);
+        fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
+
+        fixture.DrainAgentTo(fixture.AgentHashes[0], fixture.UserHash, 1);
+
+        fixture.CallFrom(fixture.OwnerHash, "pause");
+        fixture.CallFrom(fixture.UserHash, "emergencyWithdraw", fixture.UserHash);
+
+        Assert.Equal(BigInteger.Zero, fixture.Call<BigInteger>("stakeOf", fixture.UserHash));
+    }
 }
