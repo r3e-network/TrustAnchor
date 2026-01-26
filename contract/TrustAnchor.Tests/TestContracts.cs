@@ -59,7 +59,7 @@ public sealed class TrustAnchorFixture
 
     public UInt160 AgentHash { get; }
     public IReadOnlyList<UInt160> AgentHashes => _agentHashes;
-    public UInt160 AuthAgentHash { get; private set; }
+    public UInt160 AuthAgentHash { get; private set; } = UInt160.Zero;
 
     public TrustAnchorFixture()
     {
@@ -192,7 +192,7 @@ public sealed class TrustAnchorFixture
         property.SetValue(_engine, handler);
         try
         {
-            Invoke(TrustHash, "onNEP17Payment", from, amount, null);
+            Invoke(TrustHash, "onNEP17Payment", from, amount, new byte[0]);
         }
         finally
         {

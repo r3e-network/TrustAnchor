@@ -151,7 +151,7 @@ namespace TrustAnchor
         /// <returns>ECPoint of the candidate this agent votes for</returns>
         public static ECPoint AgentTarget(BigInteger index)
         {
-            var data = (ByteString)new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET).Get((ByteString)index);
+            var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET).Get((ByteString)index);
             return data is null ? default : (ECPoint)(byte[])data;
         }
 
@@ -562,7 +562,7 @@ namespace TrustAnchor
             }
 
             var targetMap = new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET);
-            var current = (ByteString)targetMap.Get((ByteString)index);
+            var current = targetMap.Get((ByteString)index);
             if (current is not null && current != targetKey)
             {
                 targetToId.Delete(current);

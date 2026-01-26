@@ -235,7 +235,7 @@ public class TrustAnchorTests
         Assert.Equal(new BigInteger(5), info[4].GetInteger());
 
         var list = fixture.Call<VmArray>("agentList");
-        Assert.Equal(1, list.Count);
+        Assert.Single(list);
     }
 
     [Fact]
