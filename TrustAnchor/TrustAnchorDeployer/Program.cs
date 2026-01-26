@@ -270,15 +270,16 @@ namespace TrustAnchorDeployer
             }
 
             var nefBytes = File.ReadAllBytes(nefPath);
-            int headerSize = 76;
-            int scriptLen = nefBytes.Length - headerSize - 4;
-            var script = new byte[scriptLen];
-            Array.Copy(nefBytes, headerSize, script, 0, scriptLen);
-
-            var hash = SHA256.Create().ComputeHash(script);
-            var scriptHash = new UInt160(hash.Take(20).ToArray());
+            var nef = NefFile.Parse(nefBytes, true);
+            var scriptHash = ComputeScriptHashForTest(nef.Script.ToArray());
 
             return (nefPath, nefBytes, scriptHash);
+        }
+
+        internal static UInt160 ComputeScriptHashForTest(byte[] script)
+        {
+            object hash = Crypto.Hash160(script);
+            return hash is UInt160 value ? value : new UInt160((byte[])hash);
         }
     }
 }

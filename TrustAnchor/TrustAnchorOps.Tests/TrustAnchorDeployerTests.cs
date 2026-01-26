@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Reflection;
+using Neo;
+using Neo.Cryptography;
 using Xunit;
 
 namespace TrustAnchorOps.Tests;
@@ -75,5 +77,22 @@ public class TrustAnchorDeployerTests
 
         var ex = Assert.Throws<TargetInvocationException>(() => method!.Invoke(null, Array.Empty<object>()));
         Assert.Contains("WIF", ex.InnerException!.Message);
+    }
+
+    [Fact]
+    public void ComputeScriptHash_UsesHash160()
+    {
+        var script = new byte[] { 0x01, 0x02, 0x03 };
+        object expectedRaw = Crypto.Hash160(script);
+        var expected = expectedRaw is UInt160 hash ? hash : new UInt160((byte[])expectedRaw);
+
+        var type = Type.GetType("TrustAnchorDeployer.Program, TrustAnchorDeployer");
+        Assert.NotNull(type);
+
+        var method = type!.GetMethod("ComputeScriptHashForTest", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var actual = (UInt160)method!.Invoke(null, new object[] { script })!;
+        Assert.Equal(expected, actual);
     }
 }
