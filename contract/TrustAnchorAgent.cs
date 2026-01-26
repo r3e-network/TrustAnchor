@@ -20,7 +20,7 @@ namespace TrustAnchor
 
         public static void Transfer(UInt160 to, BigInteger amount)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(CORE));
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == CORE);
             ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, to, amount));
         }
 
@@ -36,7 +36,7 @@ namespace TrustAnchor
 
         public static void Vote(ECPoint target)
         {
-            ExecutionEngine.Assert(Runtime.CheckWitness(CORE));
+            ExecutionEngine.Assert(Runtime.CallingScriptHash == CORE);
             ExecutionEngine.Assert(NEO.Vote(Runtime.ExecutingScriptHash, target));
         }
 
