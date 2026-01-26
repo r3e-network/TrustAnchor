@@ -244,6 +244,13 @@ namespace TrustAnchor
             // ========================================
             if (Runtime.CallingScriptHash == NEO.Hash && amount > BigInteger.Zero)
             {
+                if (IsRegisteredAgent(from))
+                {
+                    ExecutionEngine.Assert(IsPaused(), "Agent return only allowed while paused");
+                    return;
+                }
+
+                ExecutionEngine.Assert(!IsPaused(), "Contract is paused");
                 ExecutionEngine.Assert(AgentCount() > BigInteger.Zero);
 
                 BigInteger stakeAmount = amount;
@@ -472,8 +479,9 @@ namespace TrustAnchor
             BigInteger stake = StakeOf(account);
             ExecutionEngine.Assert(stake > BigInteger.Zero); // Must have stake
 
-            // Verify all agents have zero balance (agent contracts are empty)
-            for (int i = 0; i < MAXAGENTS; i++)
+            // Verify all registered agents have zero balance (agent contracts are empty)
+            int count = (int)AgentCount();
+            for (int i = 0; i < count; i++)
             {
                 UInt160 agent = Agent(i);
                 if (agent != null && agent != UInt160.Zero)
@@ -768,6 +776,16 @@ namespace TrustAnchor
                 total += 3;
             }
             return total;
+        }
+
+        private static bool IsRegisteredAgent(UInt160 account)
+        {
+            int count = (int)AgentCount();
+            for (int i = 0; i < count; i++)
+            {
+                if (Agent(i) == account) return true;
+            }
+            return false;
         }
 
         private static bool IsPaused()

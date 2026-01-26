@@ -317,9 +317,8 @@ public class TrustAnchorTests
         fixture.MintNeo(fixture.UserHash, 5);
         fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1);
 
-        fixture.DrainAgentTo(fixture.AgentHashes[0], fixture.UserHash, 1);
-
         fixture.CallFrom(fixture.OwnerHash, "pause");
+        fixture.DrainAgentTo(fixture.AgentHashes[0], fixture.TrustHash, 1);
         fixture.CallFrom(fixture.UserHash, "emergencyWithdraw", fixture.UserHash);
 
         Assert.Equal(BigInteger.Zero, fixture.Call<BigInteger>("stakeOf", fixture.UserHash));

@@ -212,7 +212,7 @@ public sealed class TrustAnchorFixture
 
     public UInt160 DeployAuthAgent()
     {
-        var agentSource = AuthAgentSource();
+        var agentSource = AuthAgentSource().Replace("[TODO]: ARGS", TrustHash.ToString());
         var (agentNef, agentManifest) = CompileSource(agentSource);
         var deployer = new UInt160(Enumerable.Repeat((byte)0x42, 20).ToArray());
         _engine.SetTransactionSigners(new[] { new Signer { Account = deployer, Scopes = WitnessScope.CalledByEntry } });
