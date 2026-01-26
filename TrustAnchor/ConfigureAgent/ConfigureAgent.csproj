@@ -8,4 +8,7 @@
     <ProjectReference Include="..\LibRPC\LibRPC.csproj" />
     <ProjectReference Include="..\LibWallet\LibWallet.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="TrustAnchorOps.Tests" />
+  </ItemGroup>
 </Project>
