@@ -86,6 +86,9 @@ namespace TrustAnchor
         private const byte PREFIXPENDINGOWNER = 0x30;
         private const byte PREFIXOWNERDELAY = 0x31;
         private const byte PREFIXPAUSED = 0x40;
+        
+        /// <summary>Reentrancy guard</summary>
+        private const byte PREFIXREENTRANCY = 0x41;
 
         // ========================================
         // Constants
@@ -104,6 +107,9 @@ namespace TrustAnchor
         /// <summary>3 day delay for owner transfer (security mechanism)</summary>
         private static readonly BigInteger OWNER_CHANGE_DELAY = 3 * 24 * 3600;
 
+        /// <summary>Minimum stake amount (1 NEO)</summary>
+        private static readonly BigInteger MIN_STAKE = 1_00000000;
+
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_OWNER = default;
 
@@ -112,7 +118,12 @@ namespace TrustAnchor
         // ========================================
 
         /// <summary>Get the contract owner address</summary>
-        public static UInt160 Owner() => (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });
+        public static UInt160 Owner()
+        {
+            var data = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });
+            if (data is null) return DEFAULT_OWNER;
+            return (UInt160)(byte[])data;
+        }
 
         /// <summary>Get agent contract address by index</summary>
         public static UInt160 Agent(BigInteger i) => (UInt160)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
@@ -398,6 +409,10 @@ namespace TrustAnchor
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(account));
             ExecutionEngine.Assert(neoAmount > BigInteger.Zero);
+            
+            // Reentrancy guard
+            ExecutionEngine.Assert(!IsReentrancyLocked(), "Reentrancy detected");
+            SetReentrancyLock(true);
 
             // IMPORTANT: Sync rewards BEFORE modifying stake
             // This ensures user earns rewards up to the withdrawal moment
@@ -459,6 +474,9 @@ namespace TrustAnchor
 
             // Ensure all requested NEO was withdrawn
             ExecutionEngine.Assert(remaining == BigInteger.Zero);
+            
+            // Release reentrancy lock
+            SetReentrancyLock(false);
         }
 
         /// <summary>
@@ -503,6 +521,8 @@ namespace TrustAnchor
             // IMPORTANT: Direct NEO transfer from contract
             // This bypasses agent contracts since they are all empty
             // User gets their NEO back, though this is a rare emergency scenario
+            BigInteger contractBalance = NEO.BalanceOf(Runtime.ExecutingScriptHash);
+            ExecutionEngine.Assert(contractBalance >= stake, "Insufficient contract NEO balance");
             ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, account, stake));
         }
 
@@ -658,8 +678,9 @@ namespace TrustAnchor
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(newOwner != UInt160.Zero);
+            BigInteger effectiveTime = Runtime.Time + OWNER_CHANGE_DELAY;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER }, newOwner);
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY }, Runtime.Time + OWNER_CHANGE_DELAY);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY }, effectiveTime);
         }
 
         /// <summary>Accept owner transfer after delay period expires</summary>
@@ -671,6 +692,16 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(pendingOwner));
             ExecutionEngine.Assert(Runtime.Time >= effectiveTime);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, pendingOwner);
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY });
+        }
+
+        /// <summary>Cancel pending owner transfer (only current owner)</summary>
+        public static void CancelOwnerTransfer()
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            var pendingOwner = (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            ExecutionEngine.Assert(pendingOwner != UInt160.Zero, "No pending transfer");
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY });
         }
@@ -791,6 +822,19 @@ namespace TrustAnchor
         private static bool IsPaused()
         {
             return Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPAUSED }) is not null;
+        }
+
+        private static bool IsReentrancyLocked()
+        {
+            return Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREENTRANCY }) is not null;
+        }
+
+        private static void SetReentrancyLock(bool locked)
+        {
+            if (locked)
+                Storage.Put(Storage.CurrentContext, new byte[] { PREFIXREENTRANCY }, 1);
+            else
+                Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXREENTRANCY });
         }
 
         private static BigInteger GetAgentIdByName(string name)
