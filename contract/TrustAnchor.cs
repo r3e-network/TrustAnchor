@@ -25,22 +25,11 @@ namespace TrustAnchor
         // Events
         // ========================================
         
-        [DisplayName("Staked")]
         public static event Action<UInt160, BigInteger> OnStaked;
-        
-        [DisplayName("Withdrawn")]
         public static event Action<UInt160, BigInteger> OnWithdrawn;
-        
-        [DisplayName("RewardClaimed")]
         public static event Action<UInt160, BigInteger> OnRewardClaimed;
-        
-        [DisplayName("AgentRegistered")]
         public static event Action<BigInteger, UInt160, string> OnAgentRegistered;
-        
-        [DisplayName("OwnerTransferInitiated")]
         public static event Action<UInt160, UInt160, BigInteger> OnOwnerTransferInitiated;
-        
-        [DisplayName("OwnerTransferCancelled")]
         public static event Action<UInt160> OnOwnerTransferCancelled;
 
         // ========================================
