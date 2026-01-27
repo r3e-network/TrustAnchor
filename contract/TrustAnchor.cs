@@ -22,17 +22,6 @@ namespace TrustAnchor
     public class TrustAnchor : SmartContract
     {
         // ========================================
-        // Events
-        // ========================================
-        
-        public static event Action<UInt160, BigInteger> OnStaked;
-        public static event Action<UInt160, BigInteger> OnWithdrawn;
-        public static event Action<UInt160, BigInteger> OnRewardClaimed;
-        public static event Action<BigInteger, UInt160, string> OnAgentRegistered;
-        public static event Action<UInt160, UInt160, BigInteger> OnOwnerTransferInitiated;
-        public static event Action<UInt160> OnOwnerTransferCancelled;
-
-        // ========================================
         // Storage Prefixes
         // ========================================
 
@@ -304,7 +293,6 @@ namespace TrustAnchor
 
                 // Transfer NEO to the agent contract
                 ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, targetAgent, NEO.BalanceOf(Runtime.ExecutingScriptHash)));
-                OnStaked(from, amount);
             }
         }
 
@@ -394,7 +382,6 @@ namespace TrustAnchor
 
                 // Transfer GAS to user
                 ExecutionEngine.Assert(GAS.Transfer(Runtime.ExecutingScriptHash, account, reward));
-                OnRewardClaimed(account, reward);
             }
         }
 
@@ -488,9 +475,8 @@ namespace TrustAnchor
             // Ensure all requested NEO was withdrawn
             ExecutionEngine.Assert(remaining == BigInteger.Zero);
             
-            // Release reentrancy lock and emit event
+            // Release reentrancy lock
             SetReentrancyLock(false);
-            OnWithdrawn(account, neoAmount);
         }
 
         /// <summary>
@@ -538,7 +524,6 @@ namespace TrustAnchor
             BigInteger contractBalance = NEO.BalanceOf(Runtime.ExecutingScriptHash);
             ExecutionEngine.Assert(contractBalance >= stake, "Insufficient contract NEO balance");
             ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, account, stake));
-            OnWithdrawn(account, stake);
         }
 
         // ========================================
@@ -577,7 +562,6 @@ namespace TrustAnchor
             targetToId.Put(targetKey, count);
 
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXAGENT_COUNT }, count + 1);
-            OnAgentRegistered(count, agent, name);
         }
 
         /// <summary>Update agent target by index</summary>
@@ -697,7 +681,6 @@ namespace TrustAnchor
             BigInteger effectiveTime = Runtime.Time + OWNER_CHANGE_DELAY;
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER }, newOwner);
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY }, effectiveTime);
-            OnOwnerTransferInitiated(Owner(), newOwner, effectiveTime);
         }
 
         /// <summary>Accept owner transfer after delay period expires</summary>
@@ -721,7 +704,6 @@ namespace TrustAnchor
             ExecutionEngine.Assert(pendingOwner != UInt160.Zero, "No pending transfer");
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERDELAY });
-            OnOwnerTransferCancelled(pendingOwner);
         }
 
         /// <summary>Update contract (migration)</summary>
