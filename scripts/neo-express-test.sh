@@ -61,10 +61,10 @@ done
 
 mkdir -p "${BUILD_DIR}/TrustAnchor"
 shopt -s nullglob
-TRUST_SOURCES=("${ROOT}/contract/TrustAnchor"*.cs)
+TRUST_SOURCES=("${ROOT}/contract/TrustAnchor/"*.cs)
 shopt -u nullglob
 if [[ ${#TRUST_SOURCES[@]} -eq 0 ]]; then
-  echo "TrustAnchor sources not found in ${ROOT}/contract" >&2
+  echo "TrustAnchor sources not found in ${ROOT}/contract/TrustAnchor" >&2
   exit 1
 fi
 TRUST_BUILD_SOURCES=()
@@ -86,7 +86,7 @@ fi
 TRUST_HASH="$("${NEOXP}" contract hash -i "${EXPRESS_FILE}" "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev)"
 
 mkdir -p "${BUILD_DIR}/TrustAnchorAgent"
-sed "s/\\[TODO\\]: ARGS/${TRUST_HASH}/g" "${ROOT}/contract/TrustAnchorAgent.cs" \
+sed "s/\\[TODO\\]: ARGS/${TRUST_HASH}/g" "${ROOT}/contract/TrustAnchorAgent/TrustAnchorAgent.cs" \
   > "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.cs"
 "${NCCS}" -o "${BUILD_DIR}/TrustAnchorAgent" --base-name TrustAnchorAgent "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.cs" >/dev/null
 
