@@ -27,7 +27,7 @@
     <Compile Include="..\\TrustAnchor\\TrustAnchor.Rewards.cs" Link="TrustAnchor.Rewards.cs" />
     <Compile Include="..\\TrustAnchor\\TrustAnchor.Agents.cs" Link="TrustAnchor.Agents.cs" />
     <Compile Include="..\\TrustAnchor\\TrustAnchor.Storage.cs" Link="TrustAnchor.Storage.cs" />
-    <Compile Include="..\\TrustAnchorAgent.cs" Link="TrustAnchorAgent.cs" />
+    <Compile Include="..\\TrustAnchorAgent\\TrustAnchorAgent.cs" Link="TrustAnchorAgent.cs" />
   </ItemGroup>
 
 </Project>
