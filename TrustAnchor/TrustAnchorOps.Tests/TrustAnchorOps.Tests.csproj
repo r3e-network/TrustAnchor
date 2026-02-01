@@ -15,6 +15,7 @@
     <ProjectReference Include="..\\ConfigureAgent\\ConfigureAgent.csproj" />
     <ProjectReference Include="..\\LibWallet\\LibWallet.csproj" />
     <ProjectReference Include="..\\LibRPC\\LibRPC.csproj" />
+    <ProjectReference Include="..\\TrustAnchorClaimer\\TrustAnchorClaimer.csproj" />
     <ProjectReference Include="..\\TrustAnchorDeployer\\TrustAnchorDeployer.csproj" />
   </ItemGroup>
 </Project>

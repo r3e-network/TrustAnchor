@@ -13,6 +13,7 @@ namespace TrustAnchorClaimer
 {
     class Program
     {
+        private const int MaxAgents = 21;
         private static readonly BigInteger THRESHOLD = ParseThreshold();
         private static readonly uint MOD = ParseMod();
 
@@ -45,7 +46,21 @@ namespace TrustAnchorClaimer
             {
                 throw new InvalidOperationException($"MOD environment variable '{envValue}' is not a valid unsigned integer.");
             }
+            if (result == 0)
+            {
+                throw new InvalidOperationException("MOD must be a positive value.");
+            }
             return result;
+        }
+
+        static IEnumerable<int> GetAgentIndices(uint mod, uint chosen)
+        {
+            if (mod == 0)
+            {
+                throw new InvalidOperationException("MOD must be a positive value.");
+            }
+
+            return Enumerable.Range(0, MaxAgents).Where(index => ((uint)index % mod) == chosen);
         }
 
         static void Main(string[] args)
@@ -53,7 +68,14 @@ namespace TrustAnchorClaimer
             uint CHOSEN = (uint)((DateTime.UtcNow.ToTimestamp() / 3600) % MOD);
             UInt160 trustAnchor = GetTrustAnchor();
             BigInteger BLOCKNUM = NativeContract.Ledger.Hash.MakeScript("currentIndex").Call().Single().GetInteger();
-            List<UInt160> AGENTS = Enumerable.Range(0, 22).Where(v => v % MOD == CHOSEN).Select(v => trustAnchor.MakeScript("agent", v)).SelectMany(a => a).ToArray().Call().Where(v => v.IsNull == false).Select(v => v.ToU160()).ToList();
+            List<UInt160> AGENTS = GetAgentIndices(MOD, CHOSEN)
+                .Select(v => trustAnchor.MakeScript("agent", v))
+                .SelectMany(a => a)
+                .ToArray()
+                .Call()
+                .Where(v => v.IsNull == false)
+                .Select(v => v.ToU160())
+                .ToList();
             $"CHOSEN: {CHOSEN}, MOD: {MOD}".Log();
             $"BLOCKNUM: {BLOCKNUM}".Log();
             $"AGENTS: {String.Join(", ", AGENTS)}".Log();
