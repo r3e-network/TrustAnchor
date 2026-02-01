@@ -142,6 +142,12 @@ cd contract
 dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 ```
 
+## Documentation
+
+- Contract overview: [contract/README.md](contract/README.md)
+- Ops tooling: [TrustAnchor/README.md](TrustAnchor/README.md)
+- 中文：质押与奖励计算算法与正确性说明: [docs/zh/staking-reward-correctness.md](docs/zh/staking-reward-correctness.md)
+
 ## Operations
 
 The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational tasks:
