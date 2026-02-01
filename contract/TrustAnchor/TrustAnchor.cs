@@ -284,12 +284,5 @@ namespace TrustAnchor
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPAUSED });
         }
-
-        /// <summary>Withdraw GAS from contract (e.g., for operations or testing)</summary>
-        public static void WithdrawGAS(BigInteger amount)
-        {
-            // Disabled: rewards must remain with stakers.
-            ExecutionEngine.Assert(false);
-        }
     }
 }
