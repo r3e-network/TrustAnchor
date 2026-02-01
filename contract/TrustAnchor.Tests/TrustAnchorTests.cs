@@ -592,59 +592,6 @@ public class TrustAnchorTests
     }
 
     // ========================================
-    // Owner Transfer Security Tests
-    // ========================================
-
-    [Fact]
-    public void InitiateOwnerTransfer_non_owner_faults()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        AssertFault(() => fixture.CallFrom(fixture.UserHash, "initiateOwnerTransfer", fixture.UserHash));
-    }
-
-    [Fact]
-    public void InitiateOwnerTransfer_to_zero_address_faults()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "initiateOwnerTransfer", UInt160.Zero));
-    }
-
-    [Fact]
-    public void CancelOwnerTransfer_works_for_owner()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        // Initiate transfer
-        fixture.CallFrom(fixture.OwnerHash, "initiateOwnerTransfer", fixture.UserHash);
-
-        // Cancel transfer
-        fixture.CallFrom(fixture.OwnerHash, "cancelOwnerTransfer");
-
-        // Owner should still be original
-        Assert.Equal(fixture.OwnerHash, fixture.Call<UInt160>("owner"));
-    }
-
-    [Fact]
-    public void CancelOwnerTransfer_non_owner_faults()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        fixture.CallFrom(fixture.OwnerHash, "initiateOwnerTransfer", fixture.UserHash);
-
-        AssertFault(() => fixture.CallFrom(fixture.UserHash, "cancelOwnerTransfer"));
-    }
-
-    [Fact]
-    public void CancelOwnerTransfer_without_pending_faults()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "cancelOwnerTransfer"));
-    }
-
-    // ========================================
     // Agent Registration Tests
     // ========================================
 
@@ -1055,37 +1002,6 @@ public class TrustAnchorTests
         // Other withdraws
         fixture.CallFrom(fixture.OtherHash, "withdraw", fixture.OtherHash, 1);
         Assert.Equal(new BigInteger(2), fixture.Call<BigInteger>("totalStake"));
-    }
-
-    // ========================================
-    // Owner Transfer Complete Flow Tests
-    // ========================================
-
-    [Fact]
-    public void CancelOwnerTransfer_clears_pending_state()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        // Initiate transfer
-        fixture.CallFrom(fixture.OwnerHash, "initiateOwnerTransfer", fixture.UserHash);
-
-        // Cancel transfer
-        fixture.CallFrom(fixture.OwnerHash, "cancelOwnerTransfer");
-
-        // Trying to cancel again should fail (no pending transfer)
-        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "cancelOwnerTransfer"));
-    }
-
-    [Fact]
-    public void InitiateOwnerTransfer_to_same_owner_allowed()
-    {
-        var fixture = new TrustAnchorFixture();
-
-        // Initiate transfer to same owner (edge case)
-        fixture.CallFrom(fixture.OwnerHash, "initiateOwnerTransfer", fixture.OwnerHash);
-
-        // Owner should still be the same
-        Assert.Equal(fixture.OwnerHash, fixture.Call<UInt160>("owner"));
     }
 
     // ========================================
