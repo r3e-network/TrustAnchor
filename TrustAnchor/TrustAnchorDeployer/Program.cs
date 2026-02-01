@@ -189,12 +189,20 @@ namespace TrustAnchorDeployer
             {
                 return new[]
                 {
-                    "TrustAnchor.cs",
-                    "TrustAnchor.Constants.cs",
-                    "TrustAnchor.View.cs",
-                    "TrustAnchor.Rewards.cs",
-                    "TrustAnchor.Agents.cs",
-                    "TrustAnchor.Storage.cs"
+                    Path.Combine("TrustAnchor", "TrustAnchor.cs"),
+                    Path.Combine("TrustAnchor", "TrustAnchor.Constants.cs"),
+                    Path.Combine("TrustAnchor", "TrustAnchor.View.cs"),
+                    Path.Combine("TrustAnchor", "TrustAnchor.Rewards.cs"),
+                    Path.Combine("TrustAnchor", "TrustAnchor.Agents.cs"),
+                    Path.Combine("TrustAnchor", "TrustAnchor.Storage.cs")
+                };
+            }
+
+            if (string.Equals(sourceFileName, "TrustAnchorAgent.cs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[]
+                {
+                    Path.Combine("TrustAnchorAgent", "TrustAnchorAgent.cs")
                 };
             }
 

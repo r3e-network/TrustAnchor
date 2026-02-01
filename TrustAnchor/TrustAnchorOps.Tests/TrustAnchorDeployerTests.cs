@@ -107,12 +107,12 @@ public class TrustAnchorDeployerTests
 
         var result = (string[])method!.Invoke(null, new object[] { "TrustAnchor.cs" })!;
 
-        Assert.Contains("TrustAnchor.cs", result);
-        Assert.Contains("TrustAnchor.Constants.cs", result);
-        Assert.Contains("TrustAnchor.View.cs", result);
-        Assert.Contains("TrustAnchor.Rewards.cs", result);
-        Assert.Contains("TrustAnchor.Agents.cs", result);
-        Assert.Contains("TrustAnchor.Storage.cs", result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.cs"), result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.Constants.cs"), result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.View.cs"), result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.Rewards.cs"), result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.Agents.cs"), result);
+        Assert.Contains(Path.Combine("TrustAnchor", "TrustAnchor.Storage.cs"), result);
     }
 
     [Fact]
