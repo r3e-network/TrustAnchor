@@ -1,5 +1,10 @@
 name: TrustAnchorDeployer
 
+# SECURITY: This workflow deploys contracts to testnet.
+# - WIF is stored in encrypted secrets (TEEWIF)
+# - RPC endpoint is configured per-environment
+# - No automatic triggers - manual approval required
+
 on:
   workflow_dispatch:
 

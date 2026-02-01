@@ -1,5 +1,10 @@
 name: Generate Key
 
+# SECURITY: Generates a new WIF keypair for deployment.
+# - Output is encrypted using repository public key
+# - Only stored in GitHub secrets (TEEWIF)
+# - NEVER logged or displayed in plain text
+
 on:
   workflow_dispatch:
 

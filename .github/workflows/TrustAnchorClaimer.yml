@@ -1,5 +1,10 @@
 name: TrustAnchorClaimer
 
+# SECURITY: Automated GAS claiming from agent contracts.
+# - Runs on schedule (every 6 hours)
+# - Uses encrypted WIF secret
+# - Threshold prevents dust transactions
+
 on:
   workflow_dispatch:
   schedule:
@@ -25,4 +30,4 @@ jobs:
           WIF: ${{ secrets.TEEWIF }}
           RPC: ${{ secrets.RPC_TESTNET }}
           TRUSTANCHOR: ${{ secrets.TRUSTANCHOR }}
-          THRESHOLD: 17179869184
+          THRESHOLD: ${{ secrets.THRESHOLD || 17179869184 }}

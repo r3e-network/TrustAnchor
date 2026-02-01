@@ -1,5 +1,11 @@
 name: TrustAnchorRepresentative
 
+# SECURITY: Distributes GAS rewards to stakers.
+# - Runs on schedule (every 6 hours)
+# - Uses encrypted WIF and REPRESENTATIVE secrets
+# - Threshold prevents dust transactions
+# - TARGET must be TrustAnchor contract for distribution
+
 on:
   workflow_dispatch:
   schedule:
@@ -25,6 +31,6 @@ jobs:
           WIF: ${{ secrets.TEEWIF }}
           RPC: ${{ secrets.RPC_TESTNET }}
           TRUSTANCHOR: ${{ secrets.TRUSTANCHOR }}
-          THRESHOLD: 17179869184
+          THRESHOLD: ${{ secrets.THRESHOLD || 17179869184 }}
           REPRESENTATIVE: ${{ secrets.REPRESENTATIVE }}
           TARGET: ${{ secrets.TARGET }}

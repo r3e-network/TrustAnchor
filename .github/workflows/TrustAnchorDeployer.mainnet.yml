@@ -1,0 +1,86 @@
+name: TrustAnchorDeployer (Mainnet)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no actual deployment)'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: mainnet
+      restrictions: |
+        - Only trusted maintainers can trigger this workflow.
+        - All deployments must be announced in advance.
+        - Verify contract addresses before confirming.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Neo Compiler
+        run: dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
+
+      - name: Restore dependencies
+        run: dotnet restore TrustAnchor/TrustAnchor.sln
+
+      - name: Verify Network Configuration
+        run: |
+          echo "Verifying RPC endpoint..."
+          RPC="${{ secrets.RPC_MAINNET }}"
+          if [ -z "$RPC" ]; then
+            echo "::error::RPC_MAINNET secret is not configured"
+            exit 1
+          fi
+          echo "RPC configured: ${RPC:0:30}..."
+
+      - name: Dry Run Validation
+        if: ${{ inputs.dry_run == true }}
+        run: |
+          echo "=== DRY RUN MODE ==="
+          echo "No transactions will be sent."
+          echo "Deployer: ${{ secrets.WIF_MAINNET ? 'configured' : 'NOT CONFIGURED' }}"
+          echo "RPC: configured"
+          echo "Owner: ${{ secrets.OWNER_HASH_MAINNET || 'NOT CONFIGURED' }}"
+
+      - name: Run Deployer (Dry Run)
+        if: ${{ inputs.dry_run == true }}
+        env:
+          WIF: ${{ secrets.WIF_MAINNET }}
+          RPC: ${{ secrets.RPC_MAINNET }}
+          OWNER_HASH: ${{ secrets.OWNER_HASH_MAINNET }}
+          CONTRACTS_DIR: contract
+          DRY_RUN: "true"
+        run: |
+          echo "Starting dry run deployment..."
+          dotnet run --project TrustAnchor/TrustAnchorDeployer 2>&1 | while read line; do
+            echo "[DRY-RUN] $line"
+          done
+
+      - name: Run Deployer (Production)
+        if: ${{ inputs.dry_run == false }}
+        env:
+          WIF: ${{ secrets.WIF_MAINNET }}
+          RPC: ${{ secrets.RPC_MAINNET }}
+          OWNER_HASH: ${{ secrets.OWNER_HASH_MAINNET }}
+          CONTRACTS_DIR: contract
+        run: |
+          echo "=== PRODUCTION DEPLOYMENT ==="
+          echo "::warning::This will deploy contracts to MAINNET"
+          echo "Deployer: ${{ secrets.WIF_MAINNET ? 'configured' : 'NOT CONFIGURED' }}"
+          dotnet run --project TrustAnchor/TrustAnchorDeployer
+
+      - name: Deployment Report
+        if: ${{ always() }}
+        run: |
+          echo "=== Deployment Complete ==="
+          echo "Review the output above for contract addresses."
+          echo "Verify contracts on Neo Explorer before proceeding."
