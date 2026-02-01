@@ -60,8 +60,28 @@ for i in $(seq 1 21); do
 done
 
 mkdir -p "${BUILD_DIR}/TrustAnchor"
-sed "s/\\[TODO\\]: ARGS/${OWNER_HASH}/g" "${ROOT}/contract/TrustAnchor.cs" > "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs"
-"${NCCS}" -o "${BUILD_DIR}/TrustAnchor" "${BUILD_DIR}/TrustAnchor/TrustAnchor.cs" >/dev/null
+shopt -s nullglob
+TRUST_SOURCES=("${ROOT}/contract/TrustAnchor"*.cs)
+shopt -u nullglob
+if [[ ${#TRUST_SOURCES[@]} -eq 0 ]]; then
+  echo "TrustAnchor sources not found in ${ROOT}/contract" >&2
+  exit 1
+fi
+TRUST_BUILD_SOURCES=()
+for source in "${TRUST_SOURCES[@]}"; do
+  base="$(basename "${source}")"
+  if [[ "${base}" == "TrustAnchorAgent.cs" ]]; then
+    continue
+  fi
+  dest="${BUILD_DIR}/TrustAnchor/${base}"
+  sed "s/\\[TODO\\]: ARGS/${OWNER_HASH}/g" "${source}" > "${dest}"
+  TRUST_BUILD_SOURCES+=("${dest}")
+done
+if [[ ${#TRUST_BUILD_SOURCES[@]} -eq 0 ]]; then
+  echo "TrustAnchor sources were filtered out unexpectedly" >&2
+  exit 1
+fi
+"${NCCS}" -o "${BUILD_DIR}/TrustAnchor" "${TRUST_BUILD_SOURCES[@]}" >/dev/null
 
 TRUST_HASH="$("${NEOXP}" contract hash -i "${EXPRESS_FILE}" "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev)"
 
@@ -109,6 +129,28 @@ invoke_tx() {
   wait_tx "${tx_hash}"
 }
 
+deploy_contract() {
+  local nef=$1
+  local account=$2
+  local force_arg=()
+  if [[ "${3:-}" == "force" ]]; then
+    force_arg=(--force)
+  fi
+  local output
+  output="$("${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" -j "${force_arg[@]}" "${nef}" "${account}")"
+  local tx_hash
+  tx_hash="$(echo "${output}" | jq -r '.txid // .transaction.hash // .hash // .tx // empty')"
+  if [[ -z "${tx_hash}" || "${tx_hash}" == "null" ]]; then
+    tx_hash="$(echo "${output}" | grep -Eo '0x[0-9a-fA-F]{64}' | head -n1)"
+  fi
+  if [[ -z "${tx_hash}" ]]; then
+    echo "failed to parse deploy transaction hash" >&2
+    echo "${output}" >&2
+    exit 1
+  fi
+  wait_tx "${tx_hash}"
+}
+
 gas_dev_output="$("${NEOXP}" transfer -i "${EXPRESS_FILE}" -p "${PASSWORD}" 2000 GAS genesis dev)"
 gas_dev_hash="$(echo "${gas_dev_output}" | awk '{print $3}')"
 wait_tx "${gas_dev_hash}"
@@ -123,9 +165,9 @@ wait_tx "${gas_dev2_hash}"
 
 sleep 2
 
-"${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev >/dev/null
-"${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev >/dev/null
-"${NEOXP}" contract deploy -i "${EXPRESS_FILE}" -p "${PASSWORD}" "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev2 >/dev/null
+deploy_contract "${BUILD_DIR}/TrustAnchor/TrustAnchor.nef" dev
+deploy_contract "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev force
+deploy_contract "${BUILD_DIR}/TrustAnchorAgent/TrustAnchorAgent.nef" dev2 force
 
 for i in $(seq 0 20); do
   agent_hash="${AGENT_HASH}"

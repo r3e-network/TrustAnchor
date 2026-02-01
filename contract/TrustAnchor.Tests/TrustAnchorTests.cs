@@ -291,6 +291,52 @@ public class TrustAnchorTests
     }
 
     [Fact]
+    public void Owner_transfer_to_zero_address_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "transferOwner", UInt160.Zero));
+    }
+
+    [Fact]
+    public void Owner_transfer_requires_owner_witness()
+    {
+        var fixture = new TrustAnchorFixture();
+        AssertFault(() => fixture.CallFrom(fixture.OtherHash, "transferOwner", fixture.UserHash));
+    }
+
+    [Fact]
+    public void Owner_transfer_same_as_current_fails()
+    {
+        var fixture = new TrustAnchorFixture();
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "transferOwner", fixture.OwnerHash));
+    }
+
+    [Fact]
+    public void Owner_transfer_is_immediate()
+    {
+        var fixture = new TrustAnchorFixture();
+        var newOwner = fixture.OtherHash;
+
+        fixture.CallFrom(fixture.OwnerHash, "transferOwner", newOwner);
+
+        Assert.Equal(newOwner, fixture.Call<UInt160>("owner"));
+    }
+
+    [Fact]
+    public void Multiple_owner_transfers_sequence()
+    {
+        var fixture = new TrustAnchorFixture();
+        var newOwner1 = fixture.OtherHash;
+        var newOwner2 = fixture.UserHash;
+
+        fixture.CallFrom(fixture.OwnerHash, "transferOwner", newOwner1);
+        Assert.Equal(newOwner1, fixture.Call<UInt160>("owner"));
+
+        fixture.CallFrom(newOwner1, "transferOwner", newOwner2);
+        Assert.Equal(newOwner2, fixture.Call<UInt160>("owner"));
+    }
+
+    [Fact]
     public void Withdraw_works_with_core_only_agent()
     {
         var fixture = new TrustAnchorFixture();

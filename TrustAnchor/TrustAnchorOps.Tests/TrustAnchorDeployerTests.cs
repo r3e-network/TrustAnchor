@@ -95,4 +95,40 @@ public class TrustAnchorDeployerTests
         var actual = (UInt160)method!.Invoke(null, new object[] { script })!;
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void GetContractSourceFileNames_includes_trustanchor_partials()
+    {
+        var type = Type.GetType("TrustAnchorDeployer.Program, TrustAnchorDeployer");
+        Assert.NotNull(type);
+
+        var method = type!.GetMethod("GetContractSourceFileNames", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var result = (string[])method!.Invoke(null, new object[] { "TrustAnchor.cs" })!;
+
+        Assert.Contains("TrustAnchor.cs", result);
+        Assert.Contains("TrustAnchor.Constants.cs", result);
+        Assert.Contains("TrustAnchor.View.cs", result);
+        Assert.Contains("TrustAnchor.Rewards.cs", result);
+        Assert.Contains("TrustAnchor.Agents.cs", result);
+        Assert.Contains("TrustAnchor.Storage.cs", result);
+    }
+
+    [Fact]
+    public void BuildNccsArguments_includes_all_sources()
+    {
+        var type = Type.GetType("TrustAnchorDeployer.Program, TrustAnchorDeployer");
+        Assert.NotNull(type);
+
+        var method = type!.GetMethod("BuildNccsArguments", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var sources = new[] { "a.cs", "b.cs" };
+        var args = (string)method!.Invoke(null, new object[] { sources, "out" })!;
+
+        Assert.Contains("-o \"out\"", args);
+        Assert.Contains("\"a.cs\"", args);
+        Assert.Contains("\"b.cs\"", args);
+    }
 }

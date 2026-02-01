@@ -183,39 +183,81 @@ namespace TrustAnchorDeployer
             return json.Substring(start, end - start);
         }
 
+        internal static string[] GetContractSourceFileNames(string sourceFileName)
+        {
+            if (string.Equals(sourceFileName, "TrustAnchor.cs", StringComparison.OrdinalIgnoreCase))
+            {
+                return new[]
+                {
+                    "TrustAnchor.cs",
+                    "TrustAnchor.Constants.cs",
+                    "TrustAnchor.View.cs",
+                    "TrustAnchor.Rewards.cs",
+                    "TrustAnchor.Agents.cs",
+                    "TrustAnchor.Storage.cs"
+                };
+            }
+
+            return new[] { sourceFileName };
+        }
+
+        internal static string BuildNccsArguments(string[] sourcePaths, string outputDir)
+        {
+            var quotedSources = sourcePaths.Select(path => $"\"{path}\"");
+            return $"-o \"{outputDir}\" {string.Join(" ", quotedSources)}";
+        }
+
         static (string nefPath, byte[] nefBytes, UInt160 scriptHash) CompileContract(string sourceFileName, string contractName, string argsHash)
         {
             var contractsDir = ResolveContractsDir();
-            string sourcePath = Path.Combine(contractsDir, sourceFileName);
-            if (!File.Exists(sourcePath))
-            {
-                throw new FileNotFoundException($"Cannot find {sourceFileName} in {contractsDir}");
-            }
+            var sourceFileNames = GetContractSourceFileNames(sourceFileName);
+            var sourcePaths = sourceFileNames
+                .Select(fileName => Path.Combine(contractsDir, fileName))
+                .ToArray();
 
-            var source = File.ReadAllText(sourcePath);
-            source = source.Replace("[TODO]: ARGS", argsHash);
-
-            if (contractName.StartsWith("TrustAnchorAgent") && contractName != "TrustAnchorAgent")
+            foreach (var sourcePath in sourcePaths)
             {
-                var index = contractName.Replace("TrustAnchorAgent", "");
-                source = source.Replace("class TrustAnchorAgent", $"class TrustAnchorAgent{index}");
-                var uniqueCode = $"\n        private const byte AGENT_INDEX = {index};\n\n        public static byte GetAgentIndex() => AGENT_INDEX;\n";
-                var braceIdx = source.IndexOf("{", source.IndexOf($"class TrustAnchorAgent{index}"));
-                if (braceIdx >= 0)
+                if (!File.Exists(sourcePath))
                 {
-                    source = source.Insert(braceIdx + 1, uniqueCode);
+                    throw new FileNotFoundException($"Cannot find {Path.GetFileName(sourcePath)} in {contractsDir}");
                 }
             }
 
             var tempDir = Path.Combine(Path.GetTempPath(), contractName);
             Directory.CreateDirectory(tempDir);
-            var tempSource = Path.Combine(tempDir, $"{contractName}.cs");
-            File.WriteAllText(tempSource, source);
+
+            var tempSources = new List<string>();
+            foreach (var sourcePath in sourcePaths)
+            {
+                var source = File.ReadAllText(sourcePath);
+                source = source.Replace("[TODO]: ARGS", argsHash);
+
+                if (string.Equals(sourceFileName, "TrustAnchorAgent.cs", StringComparison.OrdinalIgnoreCase) &&
+                    contractName.StartsWith("TrustAnchorAgent", StringComparison.Ordinal) &&
+                    contractName != "TrustAnchorAgent")
+                {
+                    var index = contractName.Replace("TrustAnchorAgent", "");
+                    source = source.Replace("class TrustAnchorAgent", $"class TrustAnchorAgent{index}");
+                    var uniqueCode = $"\n        private const byte AGENT_INDEX = {index};\n\n        public static byte GetAgentIndex() => AGENT_INDEX;\n";
+                    var braceIdx = source.IndexOf("{", source.IndexOf($"class TrustAnchorAgent{index}"));
+                    if (braceIdx >= 0)
+                    {
+                        source = source.Insert(braceIdx + 1, uniqueCode);
+                    }
+                }
+
+                var tempFileName = (sourcePaths.Length == 1 && string.Equals(sourceFileName, "TrustAnchorAgent.cs", StringComparison.OrdinalIgnoreCase))
+                    ? $"{contractName}.cs"
+                    : Path.GetFileName(sourcePath);
+                var tempSource = Path.Combine(tempDir, tempFileName);
+                File.WriteAllText(tempSource, source);
+                tempSources.Add(tempSource);
+            }
 
             var psi = new ProcessStartInfo
             {
                 FileName = ResolveNccsPath(),
-                Arguments = $"\"{tempSource}\" -o \"{tempDir}\"",
+                Arguments = BuildNccsArguments(tempSources.ToArray(), tempDir),
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false

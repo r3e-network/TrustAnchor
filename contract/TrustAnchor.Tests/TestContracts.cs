@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -82,8 +83,8 @@ public sealed class TrustAnchorFixture
         _otherSigner = new Signer { Account = OtherHash, Scopes = WitnessScope.CalledByEntry };
         _strangerSigner = new Signer { Account = StrangerHash, Scopes = WitnessScope.CalledByEntry };
 
-        var trustSource = PatchTrustAnchorSource(OwnerHash);
-        var (nef, manifest) = CompileSource(trustSource);
+        var trustSources = PatchTrustAnchorSources(OwnerHash);
+        var (nef, manifest) = CompileSources(trustSources);
         var contract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(nef, manifest, null, null);
         TrustHash = contract.Hash;
 
@@ -418,15 +419,32 @@ public class AuthAgent : SmartContract
         return _engine.Execute(script, 0, null);
     }
 
-    private static string PatchTrustAnchorSource(UInt160 ownerHash)
+    private static string[] PatchTrustAnchorSources(UInt160 ownerHash)
     {
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var sourcePath = Path.Combine(repoRoot, "contract", "TrustAnchor.cs");
-        var source = File.ReadAllText(sourcePath);
-        return source.Replace("[TODO]: ARGS", ownerHash.ToString());
+        var contractDir = Path.Combine(repoRoot, "contract");
+        var sourceFiles = new[]
+        {
+            "TrustAnchor.cs",
+            "TrustAnchor.Constants.cs",
+            "TrustAnchor.View.cs",
+            "TrustAnchor.Rewards.cs",
+            "TrustAnchor.Agents.cs",
+            "TrustAnchor.Storage.cs",
+        };
+
+        return sourceFiles
+            .Select(file => File.ReadAllText(Path.Combine(contractDir, file))
+                .Replace("[TODO]: ARGS", ownerHash.ToString()))
+            .ToArray();
     }
 
     private static (NefFile nef, ContractManifest manifest) CompileSource(string source)
+    {
+        return CompileSources(new[] { source });
+    }
+
+    private static (NefFile nef, ContractManifest manifest) CompileSources(string[] sources)
     {
         EnsureCompilerResolver();
         var compilerPath = Path.Combine(CompilerDir, "nccs.dll");
@@ -443,12 +461,17 @@ public class AuthAgent : SmartContract
         var engine = Activator.CreateInstance(engineType, options) ??
             throw new InvalidOperationException("Unable to create CompilationEngine");
 
-        var tempFile = Path.Combine(Path.GetTempPath(), $"TrustAnchor.{Guid.NewGuid():N}.cs");
-        File.WriteAllText(tempFile, source);
+        var tempFiles = new List<string>();
+        foreach (var source in sources)
+        {
+            var tempFile = Path.Combine(Path.GetTempPath(), $"TrustAnchor.{Guid.NewGuid():N}.cs");
+            File.WriteAllText(tempFile, source);
+            tempFiles.Add(tempFile);
+        }
 
         var compileMethod = engineType.GetMethod("CompileSources", new[] { typeof(string[]) }) ??
             throw new InvalidOperationException("CompileSources method not found");
-        var contexts = (IEnumerable)compileMethod.Invoke(engine, new object[] { new[] { tempFile } })!;
+        var contexts = (IEnumerable)compileMethod.Invoke(engine, new object[] { tempFiles.ToArray() })!;
         var context = contexts.Cast<object>().First();
 
         var success = (bool)(context.GetType().GetProperty("Success")?.GetValue(context) ?? false);

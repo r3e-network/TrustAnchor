@@ -18,17 +18,7 @@ namespace LibRPC
         private static readonly Uri URI = new(RPC);
         
         // Configure for N3 testnet (network: 894710606)
-        private static readonly ProtocolSettings settings = new ProtocolSettings
-        {
-            AddressVersion = 53,
-            Network = 894710606,  // Testnet network ID
-            MillisecondsPerBlock = 3000,
-            MaxTraceableBlocks = 2102400,
-            MaxValidUntilBlockIncrement = 5760,
-            MaxTransactionsPerBlock = 5000,
-            MemoryPoolMaxTransactions = 50000,
-            ValidatorsCount = 7
-        };
+        private static readonly ProtocolSettings settings = BuildProtocolSettings();
         
         private static readonly RpcClient CLI = new(URI, null, null, settings);
         private static readonly TransactionManagerFactory factory = new(CLI);
@@ -36,6 +26,29 @@ namespace LibRPC
         {
             Call(new byte[] { ((byte)OpCode.RET) });
             "OK!".Log();
+        }
+
+        private static ProtocolSettings BuildProtocolSettings()
+        {
+            const uint defaultNetwork = 894710606;
+            var networkMagicRaw = Environment.GetEnvironmentVariable("NETWORK_MAGIC");
+            var networkMagic = defaultNetwork;
+            if (!string.IsNullOrWhiteSpace(networkMagicRaw) && uint.TryParse(networkMagicRaw, out var parsed))
+            {
+                networkMagic = parsed;
+            }
+
+            return new ProtocolSettings
+            {
+                AddressVersion = 53,
+                Network = networkMagic,
+                MillisecondsPerBlock = 3000,
+                MaxTraceableBlocks = 2102400,
+                MaxValidUntilBlockIncrement = 5760,
+                MaxTransactionsPerBlock = 5000,
+                MemoryPoolMaxTransactions = 50000,
+                ValidatorsCount = 7
+            };
         }
         public static StackItem[] Call(this byte[] script)
         {
