@@ -21,12 +21,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\\TrustAnchor.cs" Link="TrustAnchor.cs" />
-    <Compile Include="..\\TrustAnchor.Constants.cs" Link="TrustAnchor.Constants.cs" />
-    <Compile Include="..\\TrustAnchor.View.cs" Link="TrustAnchor.View.cs" />
-    <Compile Include="..\\TrustAnchor.Rewards.cs" Link="TrustAnchor.Rewards.cs" />
-    <Compile Include="..\\TrustAnchor.Agents.cs" Link="TrustAnchor.Agents.cs" />
-    <Compile Include="..\\TrustAnchor.Storage.cs" Link="TrustAnchor.Storage.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.cs" Link="TrustAnchor.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.Constants.cs" Link="TrustAnchor.Constants.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.View.cs" Link="TrustAnchor.View.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.Rewards.cs" Link="TrustAnchor.Rewards.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.Agents.cs" Link="TrustAnchor.Agents.cs" />
+    <Compile Include="..\\TrustAnchor\\TrustAnchor.Storage.cs" Link="TrustAnchor.Storage.cs" />
     <Compile Include="..\\TrustAnchorAgent.cs" Link="TrustAnchorAgent.cs" />
   </ItemGroup>
 

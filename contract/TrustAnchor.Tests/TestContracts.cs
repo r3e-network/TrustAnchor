@@ -422,7 +422,7 @@ public class AuthAgent : SmartContract
     private static string[] PatchTrustAnchorSources(UInt160 ownerHash)
     {
         var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var contractDir = Path.Combine(repoRoot, "contract");
+        var contractDir = Path.Combine(repoRoot, "contract", "TrustAnchor");
         var sourceFiles = new[]
         {
             "TrustAnchor.cs",
