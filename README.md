@@ -37,8 +37,12 @@ dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 ```
 TrustAnchor/
 ├── contract/                       # Smart contract source code
-│   ├── TrustAnchor.cs             # Main staking and delegation contract
-│   ├── TrustAnchorAgent.cs        # Agent contract for voting
+│   ├── TrustAnchor/               # Main staking and delegation contract
+│   │   ├── TrustAnchor.cs
+│   │   └── TrustAnchor.csproj
+│   ├── TrustAnchorAgent/          # Agent contract for voting
+│   │   ├── TrustAnchorAgent.cs
+│   │   └── TrustAnchorAgent.csproj
 │   ├── TrustAnchor.Tests/         # Test suite
 │   └── README.md                  # Contract documentation
 ├── TrustAnchor/                   # Operational automation tools
