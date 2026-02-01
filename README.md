@@ -153,7 +153,8 @@ See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
 
 ## License
 
-[Add your license here]
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
+See [LICENSE](contract/LICENSE) for full terms.
 
 ## Contributing
 
