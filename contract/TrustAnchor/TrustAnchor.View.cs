@@ -1,5 +1,6 @@
 using System.Numerics;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Attributes;
 using Neo.SmartContract.Framework.Services;
 
 namespace TrustAnchor
@@ -16,12 +17,15 @@ namespace TrustAnchor
         // ========================================
 
         /// <summary>Get the contract owner address</summary>
+        [Safe]
         public static UInt160 Owner() => (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });
 
         /// <summary>Get agent contract address by index</summary>
+        [Safe]
         public static UInt160 Agent(BigInteger i) => (UInt160)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
 
         /// <summary>Get number of registered agents</summary>
+        [Safe]
         public static BigInteger AgentCount()
         {
             var stored = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXAGENT_COUNT });
@@ -29,16 +33,20 @@ namespace TrustAnchor
         }
 
         /// <summary>Get pause state (exposed for agents)</summary>
+        [Safe]
         public static bool isPaused() => IsPaused();
 
         /// <summary>Get the current RPS (Reward Per Stake) accumulator value</summary>
         /// <returns>Cumulative reward per token (scaled by RPS_SCALE)</returns>
+        [Safe]
         public static BigInteger RPS() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXREWARDPERTOKENSTORED });
 
         /// <summary>Get total staked NEO across all users</summary>
+        [Safe]
         public static BigInteger TotalStake() => (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXTOTALSTAKE });
 
         /// <summary>Get user's staked NEO amount</summary>
+        [Safe]
         public static BigInteger StakeOf(UInt160 account) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXSTAKE).Get(account);
 
         /// <summary>Get user's claimable GAS reward (after syncing)</summary>
@@ -53,6 +61,7 @@ namespace TrustAnchor
         /// <summary>Get agent's voting target address by index</summary>
         /// <param name="index">Agent index</param>
         /// <returns>ECPoint of the candidate this agent votes for</returns>
+        [Safe]
         public static ECPoint AgentTarget(BigInteger index)
         {
             var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_TARGET).Get((ByteString)index);
@@ -60,6 +69,7 @@ namespace TrustAnchor
         }
 
         /// <summary>Get agent name by index</summary>
+        [Safe]
         public static string AgentName(BigInteger index)
         {
             var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_NAME).Get((ByteString)index);
@@ -67,6 +77,7 @@ namespace TrustAnchor
         }
 
         /// <summary>Get agent voting amount (priority only)</summary>
+        [Safe]
         public static BigInteger AgentVoting(BigInteger index)
         {
             var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT_VOTING).Get((ByteString)index);
@@ -74,6 +85,7 @@ namespace TrustAnchor
         }
 
         /// <summary>Get full agent metadata by index</summary>
+        [Safe]
         public static object[] AgentInfo(BigInteger index)
         {
             ExecutionEngine.Assert(index >= 0 && index < AgentCount());
@@ -81,6 +93,7 @@ namespace TrustAnchor
         }
 
         /// <summary>List all registered agents</summary>
+        [Safe]
         public static object[] AgentList()
         {
             int count = (int)AgentCount();
