@@ -14,10 +14,10 @@ namespace TrustAnchor
     [ManifestExtra("Author", "R3E Network")]
     [ManifestExtra("Email", "developer@r3e.network")]
     [ManifestExtra("Description", "TrustAnchor: Non-profit voting delegation for active contributors and reputable community members")]
-    [ContractPermission("*", "transfer", "vote", "sync", "claim")]
+    [ContractPermission("*", "transfer", "vote", "sync", "claim", "isPaused", "owner")]
     [ContractPermission("0xef4073a0f2b305a38ec4050e4d3d28bc40ea63f5", "transfer", "vote")]
     [ContractPermission("0xd2a4cff31913016155e38e474a2c06d08be276cf", "transfer")]
-    [ContractPermission("0xfffdc93764dbaddd97c48f252a53ea4643faa3fd", "update")]
+    [ContractPermission("0xfffdc93764dbaddd97c48f252a53ea4643faa3fd", "update", "getContract")]
     public partial class TrustAnchor : SmartContract
     {
         // ========================================
@@ -113,8 +113,10 @@ namespace TrustAnchor
                 UInt160 targetAgent = Agent(targetIndex);
                 ExecutionEngine.Assert(targetAgent != UInt160.Zero);
 
-                // Transfer NEO to the agent contract
-                ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, targetAgent, NEO.BalanceOf(Runtime.ExecutingScriptHash)));
+                // Transfer only the deposited NEO amount to the agent contract
+                // SECURITY: Do NOT use BalanceOf(self) — that would sweep any NEO
+                // returned during emergency drain, causing accounting mismatch
+                ExecutionEngine.Assert(NEO.Transfer(Runtime.ExecutingScriptHash, targetAgent, amount));
             }
         }
 
@@ -194,8 +196,8 @@ namespace TrustAnchor
 
                 if (transferAmount > BigInteger.Zero)
                 {
-                    // Call agent's transfer method to send NEO back to contract
-                    Contract.Call(agent, "transfer", CallFlags.All,
+                    // Call agent's transfer method to send NEO back to user
+                    Contract.Call(agent, "transfer", CallFlags.States | CallFlags.AllowCall,
                         new object[] { account, transferAmount });
                     remaining -= transferAmount;
                 }
@@ -254,13 +256,43 @@ namespace TrustAnchor
         // Owner Transfer
         // ========================================
 
-        /// <summary>Transfer ownership to a new owner (immediate)</summary>
-        public static void TransferOwner(UInt160 newOwner)
+        /// <summary>
+        /// Propose ownership transfer (two-step pattern).
+        /// The new owner must call AcceptOwner() to complete the transfer.
+        /// </summary>
+        public static void ProposeOwner(UInt160 newOwner)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(newOwner != UInt160.Zero);
             ExecutionEngine.Assert(newOwner != Owner());
-            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, newOwner);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER }, newOwner);
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNERTRANSFERTIME }, Runtime.Time);
+        }
+
+        /// <summary>
+        /// Accept ownership transfer. Must be called by the pending owner.
+        /// </summary>
+        public static void AcceptOwner()
+        {
+            var pending = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            ExecutionEngine.Assert(pending is not null, "No pending owner");
+            UInt160 pendingOwner = (UInt160)(byte[])pending;
+            ExecutionEngine.Assert(Runtime.CheckWitness(pendingOwner));
+
+            // Transfer ownership
+            Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, pendingOwner);
+
+            // Clear pending state
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERTRANSFERTIME });
+        }
+
+        /// <summary>Cancel a pending ownership transfer (owner only)</summary>
+        public static void CancelOwnerProposal()
+        {
+            ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            Storage.Delete(Storage.CurrentContext, new byte[] { PREFIXOWNERTRANSFERTIME });
         }
 
         /// <summary>Update contract (migration)</summary>

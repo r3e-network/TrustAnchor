@@ -38,7 +38,7 @@ namespace TrustAnchorRepresentative
             UInt160 target = GetTarget();
             UInt160 REPRESENTATIVE = GetRepresentative();
             BigInteger BLOCKNUM = NativeContract.Ledger.Hash.MakeScript("currentIndex").Call().Single().GetInteger();
-            BigInteger GASBALANCE = NativeContract.GAS.Hash.MakeScript("balanceOf", new object[]{ REPRESENTATIVE }).Call().Single().GetInteger();
+            BigInteger GASBALANCE = NativeContract.GAS.Hash.MakeScript("balanceOf", REPRESENTATIVE).Call().Single().GetInteger();
 
             $"GASBALANCE: {GASBALANCE}".Log();
 
@@ -47,7 +47,7 @@ namespace TrustAnchorRepresentative
                 return;
             }
 
-            byte[] REWARD = NativeContract.GAS.Hash.MakeScript("transfer", new object[]{ REPRESENTATIVE, target, GASBALANCE-1_0000_0000, "reward"});
+            byte[] REWARD = NativeContract.GAS.Hash.MakeScript("transfer", REPRESENTATIVE, target, GASBALANCE-1_0000_0000, "reward");
 
             REWARD.SendTx().Out();
         }

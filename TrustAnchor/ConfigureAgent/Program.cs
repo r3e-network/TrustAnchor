@@ -116,7 +116,7 @@ namespace ConfigureAgent
             { 
                 new Signer 
                 { 
-                    Scopes = WitnessScope.Global, 
+                    Scopes = WitnessScope.CalledByEntry,
                     Account = deployer 
                 } 
             };

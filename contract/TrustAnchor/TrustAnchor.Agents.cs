@@ -20,6 +20,7 @@ namespace TrustAnchor
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
             ExecutionEngine.Assert(agent != UInt160.Zero);
+            ExecutionEngine.Assert(ContractManagement.GetContract(agent) is not null, "Agent must be a deployed contract");
 
             ExecutionEngine.Assert(!string.IsNullOrEmpty(name));
             ExecutionEngine.Assert(name.Length <= 32);
@@ -104,7 +105,11 @@ namespace TrustAnchor
             nameToId.Put(name, index);
         }
 
-        /// <summary>Set agent voting amount by index (priority only)</summary>
+        /// <summary>
+        /// Set agent voting amount by index (priority only).
+        /// Setting amount to 0 effectively deactivates the agent — it will receive
+        /// no new NEO deposits and will be drained first during withdrawals.
+        /// </summary>
         public static void SetAgentVotingById(BigInteger index, BigInteger amount)
         {
             ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
@@ -137,7 +142,7 @@ namespace TrustAnchor
             var agent = Agent(index);
             ExecutionEngine.Assert(agent != UInt160.Zero);
             var target = AgentTarget(index);
-            Contract.Call(agent, "vote", CallFlags.All, new object[] { target });
+            Contract.Call(agent, "vote", CallFlags.States | CallFlags.AllowCall, new object[] { target });
         }
 
         /// <summary>Vote using agent name</summary>

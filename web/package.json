@@ -1,5 +1,6 @@
 {
   "name": "trustanchor-web",
+  "description": "TrustAnchor web dashboard for NEO N3 voting delegation and staking management",
   "private": true,
   "version": "1.0.0",
   "type": "module",

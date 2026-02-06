@@ -20,9 +20,13 @@ namespace TrustAnchor
         [Safe]
         public static UInt160 Owner() => (UInt160)(byte[])Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNER });
 
-        /// <summary>Get agent contract address by index</summary>
+        /// <summary>Get agent contract address by index (returns Zero for unregistered)</summary>
         [Safe]
-        public static UInt160 Agent(BigInteger i) => (UInt160)(byte[])new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
+        public static UInt160 Agent(BigInteger i)
+        {
+            var data = new StorageMap(Storage.CurrentContext, PREFIXAGENT).Get((ByteString)i);
+            return data is null ? UInt160.Zero : (UInt160)(byte[])data;
+        }
 
         /// <summary>Get number of registered agents</summary>
         [Safe]
@@ -50,12 +54,37 @@ namespace TrustAnchor
         public static BigInteger StakeOf(UInt160 account) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXSTAKE).Get(account);
 
         /// <summary>Get user's claimable GAS reward (after syncing)</summary>
+        /// <remarks>NOTE: This method mutates state (calls SyncAccount). Use RewardOf for read-only queries.</remarks>
         /// <param name="account">User address</param>
         /// <returns>Claimable GAS amount</returns>
         public static BigInteger Reward(UInt160 account)
         {
             SyncAccount(account);  // Always sync before reading reward
             return (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
+        }
+
+        /// <summary>Get user's current stored reward without syncing (read-only)</summary>
+        /// <param name="account">User address</param>
+        /// <returns>Stored reward balance (may not include latest accrued rewards)</returns>
+        [Safe]
+        public static BigInteger RewardOf(UInt160 account)
+        {
+            return (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
+        }
+
+        /// <summary>Get pending owner for two-step transfer (null if none)</summary>
+        [Safe]
+        public static UInt160 PendingOwner()
+        {
+            var data = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXPENDINGOWNER });
+            return data is null ? UInt160.Zero : (UInt160)(byte[])data;
+        }
+
+        /// <summary>Get timestamp when owner transfer was proposed</summary>
+        [Safe]
+        public static BigInteger OwnerTransferProposedAt()
+        {
+            return (BigInteger)Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNERTRANSFERTIME });
         }
 
         /// <summary>Get agent's voting target address by index</summary>

@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Run in dry-run mode (no actual deployment)'
+        description: "Run in dry-run mode (no actual deployment)"
         required: false
-        default: 'true'
+        default: "true"
         type: boolean
 
 jobs:
@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: mainnet
-      restrictions: |
-        - Only trusted maintainers can trigger this workflow.
-        - All deployments must be announced in advance.
-        - Verify contract addresses before confirming.
+      # NOTE: Protection rules (required reviewers, wait timer) must be
+      # configured in GitHub UI: Settings > Environments > mainnet
     steps:
       - uses: actions/checkout@v4
 
@@ -47,9 +45,7 @@ jobs:
         run: |
           echo "=== DRY RUN MODE ==="
           echo "No transactions will be sent."
-          echo "Deployer: ${{ secrets.WIF_MAINNET ? 'configured' : 'NOT CONFIGURED' }}"
-          echo "RPC: configured"
-          echo "Owner: ${{ secrets.OWNER_HASH_MAINNET || 'NOT CONFIGURED' }}"
+          echo "Secrets configured: check GitHub Settings > Secrets"
 
       - name: Run Deployer (Dry Run)
         if: ${{ inputs.dry_run == true }}
@@ -75,7 +71,7 @@ jobs:
         run: |
           echo "=== PRODUCTION DEPLOYMENT ==="
           echo "::warning::This will deploy contracts to MAINNET"
-          echo "Deployer: ${{ secrets.WIF_MAINNET ? 'configured' : 'NOT CONFIGURED' }}"
+          if [ -n "$WIF" ]; then echo "Deployer: configured"; else echo "::error::WIF_MAINNET not configured"; exit 1; fi
           dotnet run --project TrustAnchor/TrustAnchorDeployer
 
       - name: Deployment Report

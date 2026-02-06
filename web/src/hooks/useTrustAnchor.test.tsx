@@ -1,12 +1,12 @@
-import { renderHook, act } from '@testing-library/react';
-import { vi } from 'vitest';
-import type { NetworkType } from '../types';
+import { renderHook, act } from "@testing-library/react";
+import { vi } from "vitest";
+import type { NetworkType } from "../types";
 
-vi.mock('./useWallet', () => {
-  const React = require('react');
+vi.mock("./useWallet", async () => {
+  const React = await import("react");
   return {
     useWallet: () => {
-      const [network, setNetwork] = React.useState<NetworkType>('testnet');
+      const [network, setNetwork] = React.useState<NetworkType>("testnet");
       return {
         network,
         setNetwork,
@@ -24,28 +24,29 @@ vi.mock('./useWallet', () => {
   };
 });
 
-import { useTrustAnchor } from './useTrustAnchor';
+import { useTrustAnchor } from "./useTrustAnchor";
 
-describe('useTrustAnchor network sync', () => {
-  it('uses wallet network as source of truth', () => {
+describe("useTrustAnchor network sync", () => {
+  it("uses wallet network as source of truth", () => {
     const { result } = renderHook(() => useTrustAnchor());
 
-    expect(result.current.network).toBe('testnet');
-    expect(result.current.contractHash).not.toBe('');
+    expect(result.current.network).toBe("testnet");
+    expect(result.current.contractHash).not.toBe("");
 
     act(() => {
-      result.current.setNetwork('mainnet');
+      result.current.setNetwork("mainnet");
     });
 
-    expect(result.current.network).toBe('mainnet');
-    expect(result.current.contractHash).toBe('');
+    expect(result.current.network).toBe("mainnet");
+    expect(result.current.contractHash).toBe("");
   });
 
-  it('exposes transferOwner and omits delayed transfer helpers', () => {
+  it("exposes two-step owner transfer methods", () => {
     const { result } = renderHook(() => useTrustAnchor());
 
-    expect(typeof result.current.transferOwner).toBe('function');
-    expect((result.current as any).initiateOwnerTransfer).toBeUndefined();
-    expect((result.current as any).acceptOwnerTransfer).toBeUndefined();
+    expect(typeof result.current.proposeOwner).toBe("function");
+    expect(typeof result.current.acceptOwner).toBe("function");
+    expect(typeof result.current.cancelOwnerProposal).toBe("function");
+    expect((result.current as any).transferOwner).toBeUndefined();
   });
 });

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using Neo;
+using Neo.SmartContract;
 using Neo.VM;
 using Neo.VM.Types;
 
@@ -55,48 +56,25 @@ namespace LibHelper
         public static byte[] MakeScript(this UInt160 contract, string method, params object[] args)
         {
             var sb = new ScriptBuilder();
-            
-            // Push arguments in reverse order
-            foreach (var arg in args.Reverse())
-            {
-                switch (arg)
-                {
-                    case BigInteger bi:
-                        sb.EmitPush(bi);
-                        break;
-                    case int i:
-                        sb.EmitPush(i);
-                        break;
-                    case uint ui:
-                        sb.EmitPush(ui);
-                        break;
-                    case long l:
-                        sb.EmitPush(l);
-                        break;
-                    case byte[] bytes:
-                        sb.EmitPush(bytes);
-                        break;
-                    case string s:
-                        sb.EmitPush(Encoding.UTF8.GetBytes(s));
-                        break;
-                    case UInt160 u:
-                        sb.EmitPush(u.GetSpan());
-                        break;
-                    case Neo.Cryptography.ECC.ECPoint ep:
-                        sb.EmitPush(ep.EncodePoint(true));
-                        break;
-                    default:
-                        throw new NotSupportedException($"Unsupported argument type: {arg.GetType()}");
-                }
-            }
-            
-            // Push method name
-            sb.EmitPush(Encoding.UTF8.GetBytes(method));
-            
-            // Emit SYSCALL for contract call
-            sb.EmitSysCall(0xf8236d1); // System.Contract.Call for neo-go
-            
+            var contractParams = args.Select(ToContractParameter).ToArray();
+            sb.EmitDynamicCall(contract, method, contractParams);
             return sb.ToArray();
+        }
+
+        private static ContractParameter ToContractParameter(object arg)
+        {
+            return arg switch
+            {
+                BigInteger bi => new ContractParameter(ContractParameterType.Integer) { Value = bi },
+                int i => new ContractParameter(ContractParameterType.Integer) { Value = new BigInteger(i) },
+                uint ui => new ContractParameter(ContractParameterType.Integer) { Value = new BigInteger(ui) },
+                long l => new ContractParameter(ContractParameterType.Integer) { Value = new BigInteger(l) },
+                byte[] bytes => new ContractParameter(ContractParameterType.ByteArray) { Value = bytes },
+                string s => new ContractParameter(ContractParameterType.String) { Value = s },
+                UInt160 u => new ContractParameter(ContractParameterType.Hash160) { Value = u },
+                Neo.Cryptography.ECC.ECPoint ep => new ContractParameter(ContractParameterType.PublicKey) { Value = ep },
+                _ => throw new NotSupportedException($"Unsupported argument type: {arg.GetType()}")
+            };
         }
     }
 }

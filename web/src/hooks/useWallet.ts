@@ -1,13 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { rpc, wallet, u, sc } from '@cityofzion/neon-core';
-import type { 
-  WalletState, 
-  WalletProvider,
-  TransactionResult,
-  NetworkType,
-  ContractCallResult
-} from '../types';
-import { NATIVE_CONTRACTS } from '../abis/TrustAnchor';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { rpc, wallet, u, sc } from "@cityofzion/neon-core";
+import type { WalletState, WalletProvider, TransactionResult, NetworkType, ContractCallResult } from "../types";
+import { NATIVE_CONTRACTS } from "../abis/TrustAnchor";
 
 // ============================================
 // NeoLine Wallet Types
@@ -42,7 +36,9 @@ interface NeoLineInvokeResult {
 
 interface NeoLineN3Provider {
   invoke(params: NeoLineInvokeParams): Promise<NeoLineInvokeResult>;
-  invokeRead(params: Omit<NeoLineInvokeParams, 'networkFee' | 'systemFee'>): Promise<{ stack: Array<{ type: string; value: string }> }>;
+  invokeRead(
+    params: Omit<NeoLineInvokeParams, "networkFee" | "systemFee">,
+  ): Promise<{ stack: Array<{ type: string; value: string }> }>;
   getAccount(): Promise<{ address: string; publicKey: string }>;
 }
 
@@ -50,8 +46,42 @@ interface NeoLineN3Provider {
 // Hook Implementation
 // ============================================
 
-const DEFAULT_NETWORK: NetworkType = 'testnet';
+const DEFAULT_NETWORK: NetworkType = "testnet";
 const CALLED_BY_ENTRY = 1;
+
+/**
+ * Safely convert an unknown arg to a neon-core ContractParam.
+ * Handles: number, bigint, boolean, NEO address, script hash, and string.
+ */
+function toContractParam(arg: unknown): sc.ContractParam {
+  if (arg instanceof sc.ContractParam) return arg;
+
+  if (typeof arg === "number") {
+    return sc.ContractParam.integer(arg);
+  }
+  if (typeof arg === "bigint") {
+    return sc.ContractParam.integer(arg.toString());
+  }
+  if (typeof arg === "boolean") {
+    return sc.ContractParam.boolean(arg);
+  }
+  if (typeof arg === "string") {
+    // NEO N3 address → Hash160
+    if (arg.length === 34 && arg.startsWith("N")) {
+      return sc.ContractParam.hash160(wallet.getScriptHashFromAddress(arg));
+    }
+    // 0x-prefixed script hash
+    if (/^0x[0-9a-fA-F]{40}$/.test(arg)) {
+      return sc.ContractParam.hash160(arg);
+    }
+    // Raw 40-char hex hash
+    if (/^[0-9a-fA-F]{40}$/.test(arg)) {
+      return sc.ContractParam.hash160(`0x${arg}`);
+    }
+    return sc.ContractParam.string(arg);
+  }
+  return sc.ContractParam.any();
+}
 
 interface UseWalletReturn extends WalletState {
   provider: WalletProvider;
@@ -87,8 +117,8 @@ export function useWallet(): UseWalletReturn {
   // Initialize RPC client
   useEffect(() => {
     const config = {
-      testnet: 'https://testnet1.neo.coz.io:443',
-      mainnet: 'https://n3seed2.ngd.network:10332',
+      testnet: "https://testnet1.neo.coz.io:443",
+      mainnet: "https://n3seed2.ngd.network:10332",
     };
     setRpcClient(new rpc.RPCClient(config[network]));
   }, [network]);
@@ -100,31 +130,31 @@ export function useWallet(): UseWalletReturn {
 
   // Detect available wallet provider
   const detectProvider = useCallback((): WalletProvider => {
-    if (window.neoLineN3) return 'neoline-n3';
-    if (window.neoLine) return 'neoline';
+    if (window.neoLineN3) return "neoline-n3";
+    if (window.neoLine) return "neoline";
     return null;
   }, []);
 
   // Connect wallet
   const connect = useCallback(async (): Promise<boolean> => {
-    setState(prev => ({ ...prev, connecting: true }));
+    setState((prev) => ({ ...prev, connecting: true }));
     setError(null);
 
     try {
       const detectedProvider = detectProvider();
-      
+
       if (!detectedProvider) {
-        throw new Error('No Neo N3 wallet found. Please install NeoLine extension.');
+        throw new Error("No Neo N3 wallet found. Please install NeoLine extension.");
       }
 
       let account: { address: string; publicKey: string };
 
-      if (detectedProvider === 'neoline-n3' && window.neoLineN3) {
+      if (detectedProvider === "neoline-n3" && window.neoLineN3) {
         account = await window.neoLineN3.getAccount();
-      } else if (detectedProvider === 'neoline' && window.neoLine) {
+      } else if (detectedProvider === "neoline" && window.neoLine) {
         account = await window.neoLine.getAccount();
       } else {
-        throw new Error('Wallet provider not available');
+        throw new Error("Wallet provider not available");
       }
 
       setProvider(detectedProvider);
@@ -136,7 +166,7 @@ export function useWallet(): UseWalletReturn {
 
       return true;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to connect wallet';
+      const message = err instanceof Error ? err.message : "Failed to connect wallet";
       setError(message);
       setState({
         address: null,
@@ -159,149 +189,146 @@ export function useWallet(): UseWalletReturn {
   }, []);
 
   // Invoke read method (no signature required)
-  const invokeRead = useCallback(async (
-    scriptHash: string,
-    operation: string,
-    args: unknown[] = []
-  ): Promise<ContractCallResult[]> => {
-    if (!rpcClient) {
-      throw new Error('RPC client not initialized');
-    }
+  const invokeRead = useCallback(
+    async (scriptHash: string, operation: string, args: unknown[] = []): Promise<ContractCallResult[]> => {
+      if (!rpcClient) {
+        throw new Error("RPC client not initialized");
+      }
 
-    const cleanScriptHash = scriptHash.replace('0x', '');
-    
-    const sb = new sc.ScriptBuilder();
-    sb.emitContractCall({
-      scriptHash: cleanScriptHash,
-      operation,
-      args: args as sc.ContractParam[],
-    });
-    
-    const script = sb.build();
-    const result = await rpcClient.invokeScript(u.HexString.fromHex(script));
-    
-    if (result.state !== 'HALT') {
-      throw new Error(result.exception || 'Contract call failed');
-    }
+      const cleanScriptHash = scriptHash.replace("0x", "");
 
-    return result.stack.map((item: unknown) => {
-      const stackItem = item as { value?: unknown; type?: string };
-      return {
-        value: stackItem.value as string | number | boolean | object,
-        type: stackItem.type,
-      };
-    });
-  }, [rpcClient]);
-
-  // Invoke write method (requires signature)
-  const invoke = useCallback(async (
-    scriptHash: string,
-    operation: string,
-    args: unknown[] = []
-  ): Promise<TransactionResult> => {
-    const currentState = stateRef.current;
-    
-    if (!currentState.connected || !currentState.address) {
-      return {
-        txid: '',
-        status: 'error',
-        message: 'Wallet not connected',
-      };
-    }
-
-    if (!window.neoLineN3) {
-      return {
-        txid: '',
-        status: 'error',
-        message: 'NeoLine N3 provider required for transactions',
-      };
-    }
-
-    try {
-      const cleanScriptHash = scriptHash.replace('0x', '');
-      const accountScriptHash = wallet.getScriptHashFromAddress(currentState.address);
-
-      const formattedArgs = args.map((arg): { type: string; value: unknown } => {
-        if (typeof arg === 'string') {
-          // Hash160
-          if (arg.startsWith('0x') && arg.length === 42) {
-            return { type: 'Hash160', value: arg };
-          }
-          // Public Key
-          if (/^0[234][0-9a-fA-F]{64}$/.test(arg) || /^04[0-9a-fA-F]{128}$/.test(arg)) {
-            return { type: 'PublicKey', value: arg };
-          }
-          // Hex string (could be Hash160 without 0x prefix)
-          if (/^[0-9a-fA-F]{40}$/.test(arg)) {
-            return { type: 'Hash160', value: `0x${arg}` };
-          }
-          return { type: 'String', value: arg };
-        }
-        if (typeof arg === 'number' || typeof arg === 'bigint') {
-          return { type: 'Integer', value: arg.toString() };
-        }
-        if (typeof arg === 'boolean') {
-          return { type: 'Boolean', value: arg };
-        }
-        if (arg instanceof u.HexString) {
-          return { type: 'Hash160', value: `0x${arg.toString()}` };
-        }
-        return { type: 'Any', value: arg };
-      });
-
-      const params: NeoLineInvokeParams = {
+      const sb = new sc.ScriptBuilder();
+      sb.emitContractCall({
         scriptHash: cleanScriptHash,
         operation,
-        args: formattedArgs,
-        signers: [{
-          account: accountScriptHash,
-          scopes: CALLED_BY_ENTRY,
-        }],
-      };
+        args: args.map(toContractParam),
+      });
 
-      const result = await window.neoLineN3.invoke(params);
-      
-      if (result.txid) {
+      const script = sb.build();
+      const result = await rpcClient.invokeScript(u.HexString.fromHex(script));
+
+      if (result.state !== "HALT") {
+        throw new Error(result.exception || "Contract call failed");
+      }
+
+      return result.stack.map((item: unknown) => {
+        const stackItem = item as { value?: unknown; type?: string };
         return {
-          txid: result.txid,
-          status: 'pending',
+          value: stackItem.value as string | number | boolean | object,
+          type: stackItem.type,
+        };
+      });
+    },
+    [rpcClient],
+  );
+
+  // Invoke write method (requires signature)
+  const invoke = useCallback(
+    async (scriptHash: string, operation: string, args: unknown[] = []): Promise<TransactionResult> => {
+      const currentState = stateRef.current;
+
+      if (!currentState.connected || !currentState.address) {
+        return {
+          txid: "",
+          status: "error",
+          message: "Wallet not connected",
         };
       }
-      
-      return {
-        txid: '',
-        status: 'error',
-        message: 'Transaction was rejected or failed',
-      };
-    } catch (err) {
-      return {
-        txid: '',
-        status: 'error',
-        message: err instanceof Error ? err.message : 'Unknown error',
-      };
-    }
-  }, []);
+
+      if (!window.neoLineN3) {
+        return {
+          txid: "",
+          status: "error",
+          message: "NeoLine N3 provider required for transactions",
+        };
+      }
+
+      try {
+        const cleanScriptHash = scriptHash.replace("0x", "");
+        const accountScriptHash = wallet.getScriptHashFromAddress(currentState.address);
+
+        const formattedArgs = args.map((arg): { type: string; value: unknown } => {
+          if (typeof arg === "string") {
+            // Hash160
+            if (arg.startsWith("0x") && arg.length === 42) {
+              return { type: "Hash160", value: arg };
+            }
+            // Public Key
+            if (/^0[234][0-9a-fA-F]{64}$/.test(arg) || /^04[0-9a-fA-F]{128}$/.test(arg)) {
+              return { type: "PublicKey", value: arg };
+            }
+            // Hex string (could be Hash160 without 0x prefix)
+            if (/^[0-9a-fA-F]{40}$/.test(arg)) {
+              return { type: "Hash160", value: `0x${arg}` };
+            }
+            return { type: "String", value: arg };
+          }
+          if (typeof arg === "number" || typeof arg === "bigint") {
+            return { type: "Integer", value: arg.toString() };
+          }
+          if (typeof arg === "boolean") {
+            return { type: "Boolean", value: arg };
+          }
+          if (arg instanceof u.HexString) {
+            return { type: "Hash160", value: `0x${arg.toString()}` };
+          }
+          return { type: "Any", value: arg };
+        });
+
+        const params: NeoLineInvokeParams = {
+          scriptHash: cleanScriptHash,
+          operation,
+          args: formattedArgs,
+          signers: [
+            {
+              account: accountScriptHash,
+              scopes: CALLED_BY_ENTRY,
+            },
+          ],
+        };
+
+        const result = await window.neoLineN3.invoke(params);
+
+        if (result.txid) {
+          return {
+            txid: result.txid,
+            status: "pending",
+          };
+        }
+
+        return {
+          txid: "",
+          status: "error",
+          message: "Transaction was rejected or failed",
+        };
+      } catch (err) {
+        return {
+          txid: "",
+          status: "error",
+          message: err instanceof Error ? err.message : "Unknown error",
+        };
+      }
+    },
+    [],
+  );
 
   // Stake NEO (transfer to contract)
-  const stakeNeo = useCallback(async (
-    contractHash: string,
-    amount: number
-  ): Promise<TransactionResult> => {
+  const stakeNeo = useCallback(async (contractHash: string, amount: number): Promise<TransactionResult> => {
     const currentState = stateRef.current;
-    
+
     if (!currentState.connected || !currentState.address) {
       return {
-        txid: '',
-        status: 'error',
-        message: 'Wallet not connected',
+        txid: "",
+        status: "error",
+        message: "Wallet not connected",
       };
     }
 
     if (!window.neoLineN3) {
       return {
-        txid: '',
-        status: 'error',
-        message: 'NeoLine N3 provider required',
+        txid: "",
+        status: "error",
+        message: "NeoLine N3 provider required",
       };
     }
 
@@ -309,60 +336,62 @@ export function useWallet(): UseWalletReturn {
       const accountScriptHash = wallet.getScriptHashFromAddress(currentState.address);
 
       const params: NeoLineInvokeParams = {
-        scriptHash: NATIVE_CONTRACTS.NEO.replace('0x', ''),
-        operation: 'transfer',
+        scriptHash: NATIVE_CONTRACTS.NEO.replace("0x", ""),
+        operation: "transfer",
         args: [
-          { type: 'Hash160', value: currentState.address },
-          { type: 'Hash160', value: contractHash },
-          { type: 'Integer', value: amount.toString() },
-          { type: 'Any', value: null },
+          { type: "Hash160", value: currentState.address },
+          { type: "Hash160", value: contractHash },
+          { type: "Integer", value: amount.toString() },
+          { type: "Any", value: null },
         ],
-        signers: [{
-          account: accountScriptHash,
-          scopes: CALLED_BY_ENTRY,
-        }],
+        signers: [
+          {
+            account: accountScriptHash,
+            scopes: CALLED_BY_ENTRY,
+          },
+        ],
       };
 
       const result = await window.neoLineN3.invoke(params);
-      
+
       if (result.txid) {
         return {
           txid: result.txid,
-          status: 'pending',
+          status: "pending",
         };
       }
-      
+
       return {
-        txid: '',
-        status: 'error',
-        message: 'Transaction was rejected or failed',
+        txid: "",
+        status: "error",
+        message: "Transaction was rejected or failed",
       };
     } catch (err) {
       return {
-        txid: '',
-        status: 'error',
-        message: err instanceof Error ? err.message : 'Unknown error',
+        txid: "",
+        status: "error",
+        message: err instanceof Error ? err.message : "Unknown error",
       };
     }
   }, []);
 
   // Get token balance
-  const getBalance = useCallback(async (
-    assetHash: string,
-    address: string
-  ): Promise<string> => {
-    if (!rpcClient) return '0';
+  const getBalance = useCallback(
+    async (assetHash: string, address: string): Promise<string> => {
+      if (!rpcClient) return "0";
 
-    try {
-      const result = await invokeRead(assetHash, 'balanceOf', [address]);
-      if (result.length > 0 && result[0].value !== undefined) {
-        return String(result[0].value);
+      try {
+        const result = await invokeRead(assetHash, "balanceOf", [address]);
+        if (result.length > 0 && result[0].value !== undefined) {
+          return String(result[0].value);
+        }
+        return "0";
+      } catch {
+        return "0";
       }
-      return '0';
-    } catch {
-      return '0';
-    }
-  }, [invokeRead, rpcClient]);
+    },
+    [invokeRead, rpcClient],
+  );
 
   return {
     ...state,

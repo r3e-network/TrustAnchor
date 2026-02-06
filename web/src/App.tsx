@@ -1,13 +1,13 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, Suspense, lazy } from 'react';
-import { useTrustAnchor } from './hooks/useTrustAnchor';
-import { Layout } from './components';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, Suspense, lazy } from "react";
+import { useTrustAnchor } from "./hooks/useTrustAnchor";
+import { Layout } from "./components";
 
 // Lazy load pages for better performance
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Staking = lazy(() => import('./pages/Staking'));
-const Agents = lazy(() => import('./pages/Agents'));
-const Admin = lazy(() => import('./pages/Admin'));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Staking = lazy(() => import("./pages/Staking"));
+const Agents = lazy(() => import("./pages/Agents"));
+const Admin = lazy(() => import("./pages/Admin"));
 
 // ============================================
 // Loading Fallback
@@ -50,10 +50,10 @@ function App() {
     <Layout {...layoutProps}>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-              <Dashboard 
+              <Dashboard
                 connected={trustAnchor.connected}
                 address={trustAnchor.address}
                 contractHash={trustAnchor.contractHash}
@@ -67,10 +67,10 @@ function App() {
                 fetchContractState={trustAnchor.fetchContractState}
                 fetchUserStakeInfo={trustAnchor.fetchUserStakeInfo}
               />
-            } 
+            }
           />
-          <Route 
-            path="/staking" 
+          <Route
+            path="/staking"
             element={
               <Staking
                 connected={trustAnchor.connected}
@@ -81,10 +81,10 @@ function App() {
                 claimReward={trustAnchor.claimReward}
                 emergencyWithdraw={trustAnchor.emergencyWithdraw}
               />
-            } 
+            }
           />
-          <Route 
-            path="/agents" 
+          <Route
+            path="/agents"
             element={
               <Agents
                 agents={trustAnchor.agents}
@@ -92,10 +92,10 @@ function App() {
                 loading={trustAnchor.loading}
                 voteAgent={trustAnchor.voteAgent}
               />
-            } 
+            }
           />
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <Admin
                 connected={trustAnchor.connected}
@@ -111,10 +111,12 @@ function App() {
                 voteAgent={trustAnchor.voteAgent}
                 pause={trustAnchor.pause}
                 unpause={trustAnchor.unpause}
-                transferOwner={trustAnchor.transferOwner}
+                proposeOwner={trustAnchor.proposeOwner}
+                acceptOwner={trustAnchor.acceptOwner}
+                cancelOwnerProposal={trustAnchor.cancelOwnerProposal}
                 fetchContractState={trustAnchor.fetchContractState}
               />
-            } 
+            }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

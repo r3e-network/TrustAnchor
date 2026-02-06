@@ -8,16 +8,24 @@ namespace CheckStake
 {
     class Program
     {
-        private const string RPC = "https://testnet1.neo.coz.io:443";
-        private const string TrustAnchor = "0x553db7324f4b7ffb649a26bae187ce7654750d1d";
-        private const string Staker = "779838db61bf196f205f1042ed00bc98ccb9f8ec";
+        private static readonly string RPC = Environment.GetEnvironmentVariable("RPC") ?? "https://testnet1.neo.coz.io:443";
+        private static readonly string TrustAnchor = Environment.GetEnvironmentVariable("TRUSTANCHOR") ?? "0x553db7324f4b7ffb649a26bae187ce7654750d1d";
+        private static readonly string Staker = Environment.GetEnvironmentVariable("STAKER") ?? "";
 
         static async Task Main(string[] args)
         {
             Console.WriteLine("=== TrustAnchor Stake Verification ===");
+            Console.WriteLine($"  RPC: {RPC}");
+            Console.WriteLine($"  Contract: {TrustAnchor}");
+
+            if (string.IsNullOrEmpty(Staker))
+            {
+                Console.WriteLine("  ! STAKER env var not set, skipping per-user stake check");
+            }
             Console.WriteLine();
 
-            await CheckStake();
+            if (!string.IsNullOrEmpty(Staker))
+                await CheckStake();
             await CheckTotalStake();
             await CheckAgentCount();
             await CheckOwner();

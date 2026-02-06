@@ -10,9 +10,17 @@ on:
   schedule:
     - cron: "0 0,6,12,18 * * *"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: claimer
+  cancel-in-progress: false
+
 jobs:
   main:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -30,4 +38,4 @@ jobs:
           WIF: ${{ secrets.TEEWIF }}
           RPC: ${{ secrets.RPC_TESTNET }}
           TRUSTANCHOR: ${{ secrets.TRUSTANCHOR }}
-          THRESHOLD: ${{ secrets.THRESHOLD || 17179869184 }}
+          THRESHOLD: ${{ secrets.THRESHOLD != '' && secrets.THRESHOLD || '17179869184' }}

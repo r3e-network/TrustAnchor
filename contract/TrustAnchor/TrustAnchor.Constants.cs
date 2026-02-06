@@ -78,6 +78,12 @@ namespace TrustAnchor
 
         private const byte PREFIXPAUSED = 0x40;
 
+        /// <summary>Pending owner for two-step transfer</summary>
+        private const byte PREFIXPENDINGOWNER = 0x41;
+
+        /// <summary>Timestamp when owner transfer was proposed</summary>
+        private const byte PREFIXOWNERTRANSFERTIME = 0x42;
+
         // ========================================
         // Constants
         // ========================================

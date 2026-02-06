@@ -1,21 +1,21 @@
-import { useState, useCallback } from 'react';
-import { 
-  Shield, 
-  UserPlus, 
-  Settings, 
-  PauseCircle, 
+import { useState, useCallback } from "react";
+import {
+  Shield,
+  UserPlus,
+  Settings,
+  PauseCircle,
   PlayCircle,
   Key,
   Vote,
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  Info
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { Card, Button, Input, Badge, EmptyState, ConfirmModal } from '../components';
-import { isValidPublicKey, isValidScriptHash, shortenHash, CONSTANTS } from '../abis/TrustAnchor';
-import type { Agent, TransactionResult, TabId } from '../types';
+  Info,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { Card, Button, Input, Badge, EmptyState, ConfirmModal } from "../components";
+import { isValidPublicKey, isValidScriptHash, shortenHash, CONSTANTS } from "../abis/TrustAnchor";
+import type { Agent, TransactionResult, TabId } from "../types";
 
 // ============================================
 // Types
@@ -35,7 +35,9 @@ interface AdminProps {
   readonly voteAgent: (index: number) => Promise<TransactionResult>;
   readonly pause: () => Promise<TransactionResult>;
   readonly unpause: () => Promise<TransactionResult>;
-  readonly transferOwner: (newOwner: string) => Promise<TransactionResult>;
+  readonly proposeOwner: (newOwner: string) => Promise<TransactionResult>;
+  readonly acceptOwner: () => Promise<TransactionResult>;
+  readonly cancelOwnerProposal: () => Promise<TransactionResult>;
   readonly fetchContractState: () => Promise<void>;
 }
 
@@ -44,9 +46,9 @@ interface AdminProps {
 // ============================================
 
 const TABS: { id: TabId; label: string; icon: typeof Settings }[] = [
-  { id: 'agents', label: 'Agents', icon: UserPlus },
-  { id: 'voting', label: 'Voting Config', icon: Vote },
-  { id: 'contract', label: 'Contract', icon: Settings },
+  { id: "agents", label: "Agents", icon: UserPlus },
+  { id: "voting", label: "Voting Config", icon: Vote },
+  { id: "contract", label: "Contract", icon: Settings },
 ];
 
 // ============================================
@@ -60,13 +62,13 @@ interface ValidationResult {
 
 function validateAgentForm(data: { agentHash: string; target: string; name: string }): ValidationResult {
   if (!data.agentHash || !isValidScriptHash(data.agentHash)) {
-    return { isValid: false, error: 'Invalid agent contract hash' };
+    return { isValid: false, error: "Invalid agent contract hash" };
   }
   if (!data.target || !isValidPublicKey(data.target)) {
-    return { isValid: false, error: 'Invalid public key format' };
+    return { isValid: false, error: "Invalid public key format" };
   }
   if (!data.name || data.name.trim().length === 0) {
-    return { isValid: false, error: 'Name is required' };
+    return { isValid: false, error: "Name is required" };
   }
   if (data.name.length > CONSTANTS.MAX_AGENT_NAME_LENGTH) {
     return { isValid: false, error: `Name must be ${CONSTANTS.MAX_AGENT_NAME_LENGTH} characters or less` };
@@ -84,16 +86,16 @@ interface RegisterAgentFormProps {
 }
 
 function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
-  const [formData, setFormData] = useState({ agentHash: '', target: '', name: '' });
+  const [formData, setFormData] = useState({ agentHash: "", target: "", name: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setValidationError(null);
-    
+
     const validation = validateAgentForm(formData);
     if (!validation.isValid) {
-      setValidationError(validation.error || 'Invalid form data');
+      setValidationError(validation.error || "Invalid form data");
       return;
     }
 
@@ -101,12 +103,12 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
     const result = await onRegister(formData.agentHash, formData.target, formData.name);
     setIsLoading(false);
 
-    if (result.status !== 'error') {
-      toast.success('Agent registered successfully!');
-      setFormData({ agentHash: '', target: '', name: '' });
+    if (result.status !== "error") {
+      toast.success("Agent registered successfully!");
+      setFormData({ agentHash: "", target: "", name: "" });
       onSuccess();
     } else {
-      toast.error(result.message || 'Registration failed');
+      toast.error(result.message || "Registration failed");
     }
   };
 
@@ -117,7 +119,7 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
         value={formData.agentHash}
         onChange={(e) => setFormData({ ...formData, agentHash: e.target.value })}
         placeholder="0x..."
-        error={validationError?.includes('hash') ? validationError : undefined}
+        error={validationError?.includes("hash") ? validationError : undefined}
       />
 
       <Input
@@ -125,7 +127,7 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
         value={formData.target}
         onChange={(e) => setFormData({ ...formData, target: e.target.value })}
         placeholder="02... or 03..."
-        error={validationError?.includes('public key') ? validationError : undefined}
+        error={validationError?.includes("public key") ? validationError : undefined}
       />
 
       <Input
@@ -134,7 +136,7 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         placeholder="e.g., Community Agent 1"
         maxLength={CONSTANTS.MAX_AGENT_NAME_LENGTH}
-        error={validationError?.includes('Name') ? validationError : undefined}
+        error={validationError?.includes("Name") ? validationError : undefined}
       />
 
       <div className="flex items-start space-x-2 p-3 bg-blue-500/10 rounded-lg">
@@ -144,11 +146,7 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
         </p>
       </div>
 
-      <Button
-        onClick={handleSubmit}
-        isLoading={isLoading}
-        fullWidth
-      >
+      <Button onClick={handleSubmit} isLoading={isLoading} fullWidth>
         Register Agent
       </Button>
     </div>
@@ -167,28 +165,28 @@ interface UpdateAgentFormProps {
 }
 
 function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: UpdateAgentFormProps) {
-  const [selectedIndex, setSelectedIndex] = useState('');
-  const [target, setTarget] = useState('');
-  const [name, setName] = useState('');
-  const [loading, setLoading] = useState<'target' | 'name' | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState("");
+  const [target, setTarget] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState<"target" | "name" | null>(null);
 
   const handleUpdateTarget = async () => {
     if (!selectedIndex || !target) return;
     if (!isValidPublicKey(target)) {
-      toast.error('Invalid public key format');
+      toast.error("Invalid public key format");
       return;
     }
 
-    setLoading('target');
+    setLoading("target");
     const result = await onUpdateTarget(parseInt(selectedIndex), target);
     setLoading(null);
 
-    if (result.status !== 'error') {
-      toast.success('Agent target updated!');
-      setTarget('');
+    if (result.status !== "error") {
+      toast.success("Agent target updated!");
+      setTarget("");
       onSuccess();
     } else {
-      toast.error(result.message || 'Update failed');
+      toast.error(result.message || "Update failed");
     }
   };
 
@@ -199,16 +197,16 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
       return;
     }
 
-    setLoading('name');
+    setLoading("name");
     const result = await onUpdateName(parseInt(selectedIndex), name);
     setLoading(null);
 
-    if (result.status !== 'error') {
-      toast.success('Agent name updated!');
-      setName('');
+    if (result.status !== "error") {
+      toast.success("Agent name updated!");
+      setName("");
       onSuccess();
     } else {
-      toast.error(result.message || 'Update failed');
+      toast.error(result.message || "Update failed");
     }
   };
 
@@ -241,7 +239,7 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
               variant="secondary"
               size="sm"
               onClick={handleUpdateTarget}
-              isLoading={loading === 'target'}
+              isLoading={loading === "target"}
               disabled={!selectedIndex}
             >
               Update
@@ -262,7 +260,7 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
               variant="secondary"
               size="sm"
               onClick={handleUpdateName}
-              isLoading={loading === 'name'}
+              isLoading={loading === "name"}
               disabled={!selectedIndex}
             >
               Update
@@ -286,39 +284,39 @@ interface VotingConfigFormProps {
 }
 
 function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConfigFormProps) {
-  const [selectedIndex, setSelectedIndex] = useState('');
-  const [votingAmount, setVotingAmount] = useState('');
-  const [loading, setLoading] = useState<'set' | 'vote' | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState("");
+  const [votingAmount, setVotingAmount] = useState("");
+  const [loading, setLoading] = useState<"set" | "vote" | null>(null);
 
-  const selectedAgent = agents.find(a => a.index === parseInt(selectedIndex));
+  const selectedAgent = agents.find((a) => a.index === parseInt(selectedIndex));
 
   const handleSetVoting = async () => {
     if (!selectedIndex || !votingAmount) return;
 
-    setLoading('set');
+    setLoading("set");
     const result = await onSetVoting(parseInt(selectedIndex), parseInt(votingAmount));
     setLoading(null);
 
-    if (result.status !== 'error') {
-      toast.success('Voting priority updated!');
-      setVotingAmount('');
+    if (result.status !== "error") {
+      toast.success("Voting priority updated!");
+      setVotingAmount("");
       onSuccess();
     } else {
-      toast.error(result.message || 'Update failed');
+      toast.error(result.message || "Update failed");
     }
   };
 
   const handleVote = async () => {
     if (!selectedIndex) return;
 
-    setLoading('vote');
+    setLoading("vote");
     const result = await onVote(parseInt(selectedIndex));
     setLoading(null);
 
-    if (result.status !== 'error') {
-      toast.success('Vote cast successfully!');
+    if (result.status !== "error") {
+      toast.success("Vote cast successfully!");
     } else {
-      toast.error(result.message || 'Vote failed');
+      toast.error(result.message || "Vote failed");
     }
   };
 
@@ -359,7 +357,7 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
         />
         <Button
           onClick={handleSetVoting}
-          isLoading={loading === 'set'}
+          isLoading={loading === "set"}
           disabled={!selectedIndex}
           fullWidth
           className="mt-3"
@@ -372,7 +370,7 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
         <Button
           variant="secondary"
           onClick={handleVote}
-          isLoading={loading === 'vote'}
+          isLoading={loading === "vote"}
           disabled={!selectedIndex}
           leftIcon={<Vote className="w-4 h-4" />}
           fullWidth
@@ -406,11 +404,11 @@ function ContractControls({ isPaused, onPause, onUnpause, onRefresh }: ContractC
     const result = isPaused ? await onUnpause() : await onPause();
     setIsLoading(false);
 
-    if (result.status !== 'error') {
-      toast.success(isPaused ? 'Contract unpaused!' : 'Contract paused!');
+    if (result.status !== "error") {
+      toast.success(isPaused ? "Contract unpaused!" : "Contract paused!");
       await onRefresh();
     } else {
-      toast.error(result.message || 'Operation failed');
+      toast.error(result.message || "Operation failed");
     }
   };
 
@@ -424,26 +422,17 @@ function ContractControls({ isPaused, onPause, onUnpause, onRefresh }: ContractC
           <div>
             <h2 className="text-lg font-semibold text-white">Contract Status</h2>
             <p className="text-sm text-slate-400">
-              Current state: <span className={isPaused ? 'text-red-400' : 'text-green-400'}>
-                {isPaused ? 'Paused' : 'Active'}
-              </span>
+              Current state:{" "}
+              <span className={isPaused ? "text-red-400" : "text-green-400"}>{isPaused ? "Paused" : "Active"}</span>
             </p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            onClick={onRefresh}
-            title="Refresh state"
-          >
+          <Button variant="ghost" onClick={onRefresh} title="Refresh state">
             <RefreshCw className="w-5 h-5" />
           </Button>
           {isPaused ? (
-            <Button
-              onClick={handleToggle}
-              isLoading={isLoading}
-              leftIcon={<PlayCircle className="w-5 h-5" />}
-            >
+            <Button onClick={handleToggle} isLoading={isLoading} leftIcon={<PlayCircle className="w-5 h-5" />}>
               Unpause
             </Button>
           ) : (
@@ -467,18 +456,20 @@ function ContractControls({ isPaused, onPause, onUnpause, onRefresh }: ContractC
 // ============================================
 
 interface OwnerTransferProps {
-  onTransfer: (newOwner: string) => Promise<TransactionResult>;
+  onPropose: (newOwner: string) => Promise<TransactionResult>;
+  onAccept: () => Promise<TransactionResult>;
+  onCancel: () => Promise<TransactionResult>;
   onRefresh: () => Promise<void>;
 }
 
-function OwnerTransfer({ onTransfer, onRefresh }: OwnerTransferProps) {
-  const [newOwner, setNewOwner] = useState('');
+function OwnerTransfer({ onPropose, onCancel, onRefresh }: OwnerTransferProps) {
+  const [newOwner, setNewOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleTransfer = async () => {
     if (!newOwner) {
-      toast.error('Please enter new owner address');
+      toast.error("Please enter new owner address");
       return;
     }
     setShowConfirmModal(true);
@@ -486,16 +477,29 @@ function OwnerTransfer({ onTransfer, onRefresh }: OwnerTransferProps) {
 
   const confirmTransfer = async () => {
     setIsLoading(true);
-    const result = await onTransfer(newOwner);
+    const result = await onPropose(newOwner);
     setIsLoading(false);
     setShowConfirmModal(false);
 
-    if (result.status !== 'error') {
-      toast.success('Ownership transferred!');
-      setNewOwner('');
+    if (result.status !== "error") {
+      toast.success("Ownership transfer proposed! New owner must call AcceptOwner to complete.");
+      setNewOwner("");
       await onRefresh();
     } else {
-      toast.error(result.message || 'Transfer failed');
+      toast.error(result.message || "Proposal failed");
+    }
+  };
+
+  const handleCancel = async () => {
+    setIsLoading(true);
+    const result = await onCancel();
+    setIsLoading(false);
+
+    if (result.status !== "error") {
+      toast.success("Owner transfer proposal cancelled.");
+      await onRefresh();
+    } else {
+      toast.error(result.message || "Cancel failed");
     }
   };
 
@@ -520,17 +524,17 @@ function OwnerTransfer({ onTransfer, onRefresh }: OwnerTransferProps) {
           <div className="flex items-start space-x-2 p-3 bg-yellow-500/10 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-yellow-400">
-              Ownership transfer is immediate. Double-check the address before confirming.
+              Ownership transfer uses a two-step process: propose, then the new owner must accept. You can cancel a
+              pending proposal at any time.
             </p>
           </div>
 
-          <Button
-            variant="secondary"
-            onClick={handleTransfer}
-            isLoading={isLoading}
-            fullWidth
-          >
-            Transfer Ownership
+          <Button variant="secondary" onClick={handleTransfer} isLoading={isLoading} fullWidth>
+            Propose Transfer
+          </Button>
+
+          <Button variant="danger" onClick={handleCancel} isLoading={isLoading} fullWidth>
+            Cancel Pending Proposal
           </Button>
         </div>
       </Card>
@@ -539,9 +543,9 @@ function OwnerTransfer({ onTransfer, onRefresh }: OwnerTransferProps) {
         isOpen={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
         onConfirm={confirmTransfer}
-        title="Confirm Ownership Transfer"
-        message={`Transfer ownership to ${shortenHash(newOwner)}? This takes effect immediately.`}
-        confirmText="Transfer Ownership"
+        title="Confirm Ownership Proposal"
+        message={`Propose ownership transfer to ${shortenHash(newOwner)}? The new owner must call AcceptOwner to complete the transfer.`}
+        confirmText="Propose Transfer"
         isLoading={isLoading}
         variant="warning"
       />
@@ -567,10 +571,12 @@ export function Admin({
   voteAgent,
   pause,
   unpause,
-  transferOwner,
+  proposeOwner,
+  acceptOwner,
+  cancelOwnerProposal,
   fetchContractState,
 }: AdminProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('agents');
+  const [activeTab, setActiveTab] = useState<TabId>("agents");
 
   const handleSuccess = useCallback(() => {
     fetchContractState();
@@ -594,7 +600,7 @@ export function Admin({
         description="You are not the contract owner. Admin functions are restricted to the owner only."
         action={
           <div className="text-sm text-slate-600 space-y-1">
-            <p>Connected: {shortenHash(address || '')}</p>
+            <p>Connected: {shortenHash(address || "")}</p>
             <p>Owner: {shortenHash(owner)}</p>
           </div>
         }
@@ -608,9 +614,7 @@ export function Admin({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
-          <p className="text-slate-400">
-            Manage TrustAnchor contract settings, agents, and voting configuration.
-          </p>
+          <p className="text-slate-400">Manage TrustAnchor contract settings, agents, and voting configuration.</p>
         </div>
         <Badge variant="success" icon={<CheckCircle className="w-3 h-3" />}>
           Owner Access
@@ -618,12 +622,7 @@ export function Admin({
       </div>
 
       {/* Contract Status */}
-      <ContractControls
-        isPaused={isPaused}
-        onPause={pause}
-        onUnpause={unpause}
-        onRefresh={fetchContractState}
-      />
+      <ContractControls isPaused={isPaused} onPause={pause} onUnpause={unpause} onRefresh={fetchContractState} />
 
       {/* Tabs */}
       <div className="flex space-x-1 bg-slate-800/50 p-1 rounded-xl">
@@ -635,10 +634,7 @@ export function Admin({
               onClick={() => setActiveTab(tab.id)}
               className={`
                 flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all
-                ${activeTab === tab.id
-                  ? 'bg-slate-700 text-white'
-                  : 'text-slate-400 hover:text-slate-200'
-                }
+                ${activeTab === tab.id ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}
               `}
             >
               <Icon className="w-4 h-4" />
@@ -650,16 +646,13 @@ export function Admin({
 
       {/* Tab Content */}
       <div className="space-y-6">
-        {activeTab === 'agents' && (
+        {activeTab === "agents" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card header={{ title: 'Register New Agent', icon: <UserPlus className="w-5 h-5 text-green-400" /> }}>
-              <RegisterAgentForm
-                onRegister={registerAgent}
-                onSuccess={handleSuccess}
-              />
+            <Card header={{ title: "Register New Agent", icon: <UserPlus className="w-5 h-5 text-green-400" /> }}>
+              <RegisterAgentForm onRegister={registerAgent} onSuccess={handleSuccess} />
             </Card>
 
-            <Card header={{ title: 'Update Agent', icon: <Settings className="w-5 h-5 text-blue-400" /> }}>
+            <Card header={{ title: "Update Agent", icon: <Settings className="w-5 h-5 text-blue-400" /> }}>
               <UpdateAgentForm
                 agents={agents}
                 onUpdateTarget={updateAgentTarget}
@@ -670,8 +663,8 @@ export function Admin({
           </div>
         )}
 
-        {activeTab === 'voting' && (
-          <Card header={{ title: 'Voting Configuration', icon: <Vote className="w-5 h-5 text-yellow-400" /> }}>
+        {activeTab === "voting" && (
+          <Card header={{ title: "Voting Configuration", icon: <Vote className="w-5 h-5 text-yellow-400" /> }}>
             <VotingConfigForm
               agents={agents}
               onSetVoting={setAgentVoting}
@@ -681,9 +674,11 @@ export function Admin({
           </Card>
         )}
 
-        {activeTab === 'contract' && (
+        {activeTab === "contract" && (
           <OwnerTransfer
-            onTransfer={transferOwner}
+            onPropose={proposeOwner}
+            onAccept={acceptOwner}
+            onCancel={cancelOwnerProposal}
             onRefresh={fetchContractState}
           />
         )}

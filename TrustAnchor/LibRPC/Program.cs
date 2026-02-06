@@ -55,7 +55,7 @@ namespace LibRPC
             RpcInvokeResult result = CLI.InvokeScriptAsync(script).GetAwaiter().GetResult();
             if (result.State != VMState.HALT)
             {
-                throw new Exception();
+                throw new Exception($"Script invocation FAULT: {result.Exception ?? "unknown error"}");
             }
             return result.Stack;
         }
