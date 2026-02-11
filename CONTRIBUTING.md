@@ -6,7 +6,8 @@ Thank you for your interest in contributing to TrustAnchor! This document provid
 
 ### Prerequisites
 
-- .NET 10.0 SDK
+- .NET 9.0 SDK (contracts and tests)
+- .NET 10.0 SDK (ops tools)
 - Neo.Compiler.CSharp 3.8.1+
 - Git
 
@@ -14,17 +15,20 @@ Thank you for your interest in contributing to TrustAnchor! This document provid
 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
+
    ```bash
    git clone https://github.com/YOUR-USERNAME/TrustAnchor.git
    cd TrustAnchor
    ```
 
 3. Install the Neo compiler:
+
    ```bash
    dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
    ```
 
 4. Build the contracts:
+
    ```bash
    dotnet build contract/TrustAnchor.Tests/TrustAnchor.Tests.csproj
    ```
@@ -71,13 +75,14 @@ When modifying smart contracts:
 ```
 TrustAnchor/
 ├── contract/           # Smart contract source code
-│   ├── TrustAnchor.cs       # Main contract
-│   ├── TrustAnchorAgent.cs  # Agent contract
+│   ├── TrustAnchor/         # Main contract (partial classes)
+│   ├── TrustAnchorAgent/    # Agent contract
 │   └── TrustAnchor.Tests/   # Test suite
 ├── TrustAnchor/         # Operational automation tools
 │   ├── TrustAnchorClaimer      # GAS claiming automation
 │   ├── TrustAnchorRepresentative # GAS distribution
 │   └── TrustAnchorDeployer     # Contract deployment
+├── web/                # React + TypeScript dashboard
 ├── docs/               # Documentation
 │   └── security/       # Security audit documents
 └── .github/workflows/  # CI/CD pipelines

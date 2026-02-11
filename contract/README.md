@@ -21,7 +21,7 @@ Unlike traditional voting systems that concentrate power based on wealth or extr
 ## How It Works
 
 ```
-┌───────���─────────────────────────────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────┐
 │                         NEO Holders                               │
 │  Deposit NEO → Earn Voting Power + Share of GAS (No Fees)        │
 └────────────────────────┬────────────────────────────────────────┘
@@ -89,7 +89,7 @@ Due to the limitations of the toolkits at that time, this code used some tricky 
 
 In order to keep consistency with the smart contract code running on mainnet, the code will not be switched to a new compiler version for the time being.
 
-**Emergency Operations:** Owner `WithdrawGAS` is disabled to ensure rewards remain with stakers.
+**Emergency Operations:** The `WithdrawGAS` method has been removed to ensure all rewards remain with stakers.
 
 **Reward Handling:** GAS received before any staking begins is held and distributed once the first stake is created.
 

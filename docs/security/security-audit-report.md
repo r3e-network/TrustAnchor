@@ -1,5 +1,14 @@
 # TrustAnchor Smart Contract Security Audit Report
 
+> **IMPORTANT: This audit report is outdated.** It was written against an earlier version of the contract
+> that used a weight-based configuration system (`BeginConfig/FinalizeConfig/SetAgentConfig`,
+> `RebalanceVotes`, weight sums to 21, etc.). The contract has since been refactored to a simpler
+> agent registry model with manual voting priority (`RegisterAgent`, `SetAgentVotingById`,
+> `VoteAgentById`). Many findings reference functions and patterns that no longer exist in the
+> current codebase. Key fixes already applied include: two-step owner transfer (ProposeOwner/AcceptOwner),
+> emergency withdrawal mechanism, agent contract verification, and input validation.
+> A new audit against the current codebase is recommended.
+
 **Auditor:** Claude (Ultrathink Security Protocol)
 **Date:** 2025-01-24
 **Protocol:** TrustAnchor - NEO Voting Delegation System

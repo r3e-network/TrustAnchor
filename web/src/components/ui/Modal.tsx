@@ -1,6 +1,6 @@
-import { X, AlertTriangle } from 'lucide-react';
-import type { ReactNode } from 'react';
-import { Button } from './Button';
+import { X, AlertTriangle } from "lucide-react";
+import { useEffect, useCallback, type ReactNode } from "react";
+import { Button } from "./Button";
 
 // ============================================
 // Modal Component
@@ -12,39 +12,54 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   icon?: ReactNode;
-  iconVariant?: 'default' | 'danger' | 'warning';
+  iconVariant?: "default" | "danger" | "warning";
 }
 
 const iconVariantClasses = {
-  default: 'bg-blue-500/20',
-  danger: 'bg-red-500/20',
-  warning: 'bg-yellow-500/20',
+  default: "bg-blue-500/20",
+  danger: "bg-red-500/20",
+  warning: "bg-yellow-500/20",
 };
 
 const iconColorClasses = {
-  default: 'text-blue-400',
-  danger: 'text-red-400',
-  warning: 'text-yellow-400',
+  default: "text-blue-400",
+  danger: "text-red-400",
+  warning: "text-yellow-400",
 };
 
-export function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  icon,
-  iconVariant = 'default' 
-}: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, icon, iconVariant = "default" }: ModalProps) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose],
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.removeEventListener("keydown", handleKeyDown);
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen, handleKeyDown]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
       {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+
       {/* Modal */}
       <div className="relative bg-slate-800 rounded-2xl border border-slate-700 max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -55,33 +70,37 @@ export function Modal({
                 <span className={iconColorClasses[iconVariant]}>{icon}</span>
               </div>
             )}
-            <h3 className="text-xl font-bold text-white">{title}</h3>
+            <h3 id="modal-title" className="text-xl font-bold text-white">
+              {title}
+            </h3>
           </div>
           <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-6">
-          {children}
-        </div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );
 }
 
+// ============================================
 // Confirmation Modal
-interface ConfirmModalProps extends Omit<ModalProps, 'children'> {
+// ============================================
+
+interface ConfirmModalProps extends Omit<ModalProps, "children"> {
   message: string;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
   isLoading?: boolean;
-  variant?: 'danger' | 'warning' | 'default';
+  variant?: "danger" | "warning" | "default";
 }
 
 export function ConfirmModal({
@@ -89,46 +108,38 @@ export function ConfirmModal({
   onClose,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
   onConfirm,
   isLoading = false,
-  variant = 'default',
+  variant = "default",
 }: ConfirmModalProps) {
   const variantConfig = {
-    danger: { icon: <AlertTriangle className="w-6 h-6" />, iconVariant: 'danger' as const, buttonVariant: 'danger' as const },
-    warning: { icon: <AlertTriangle className="w-6 h-6" />, iconVariant: 'warning' as const, buttonVariant: 'primary' as const },
-    default: { icon: undefined, iconVariant: 'default' as const, buttonVariant: 'primary' as const },
+    danger: {
+      icon: <AlertTriangle className="w-6 h-6" />,
+      iconVariant: "danger" as const,
+      buttonVariant: "danger" as const,
+    },
+    warning: {
+      icon: <AlertTriangle className="w-6 h-6" />,
+      iconVariant: "warning" as const,
+      buttonVariant: "primary" as const,
+    },
+    default: { icon: undefined, iconVariant: "default" as const, buttonVariant: "primary" as const },
   };
 
   const config = variantConfig[variant];
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={title}
-      icon={config.icon}
-      iconVariant={config.iconVariant}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={title} icon={config.icon} iconVariant={config.iconVariant}>
       <div className="space-y-6">
         <p className="text-slate-300">{message}</p>
-        
+
         <div className="flex space-x-3">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-            fullWidth
-            disabled={isLoading}
-          >
+          <Button variant="secondary" onClick={onClose} fullWidth disabled={isLoading}>
             {cancelText}
           </Button>
-          <Button
-            variant={config.buttonVariant}
-            onClick={onConfirm}
-            fullWidth
-            isLoading={isLoading}
-          >
+          <Button variant={config.buttonVariant} onClick={onConfirm} fullWidth isLoading={isLoading}>
             {confirmText}
           </Button>
         </div>

@@ -53,16 +53,6 @@ namespace TrustAnchor
         [Safe]
         public static BigInteger StakeOf(UInt160 account) => (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXSTAKE).Get(account);
 
-        /// <summary>Get user's claimable GAS reward (after syncing)</summary>
-        /// <remarks>NOTE: This method mutates state (calls SyncAccount). Use RewardOf for read-only queries.</remarks>
-        /// <param name="account">User address</param>
-        /// <returns>Claimable GAS amount</returns>
-        public static BigInteger Reward(UInt160 account)
-        {
-            SyncAccount(account);  // Always sync before reading reward
-            return (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
-        }
-
         /// <summary>Get user's current stored reward without syncing (read-only)</summary>
         /// <param name="account">User address</param>
         /// <returns>Stored reward balance (may not include latest accrued rewards)</returns>

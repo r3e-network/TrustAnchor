@@ -74,6 +74,16 @@ namespace TrustAnchor
             return true;
         }
 
+        /// <summary>Get user's claimable GAS reward (after syncing)</summary>
+        /// <remarks>NOTE: This method mutates state (calls SyncAccount). Use RewardOf for read-only queries.</remarks>
+        /// <param name="account">User address</param>
+        /// <returns>Claimable GAS amount</returns>
+        public static BigInteger Reward(UInt160 account)
+        {
+            SyncAccount(account);  // Always sync before reading reward
+            return (BigInteger)new StorageMap(Storage.CurrentContext, PREFIXREWARD).Get(account);
+        }
+
         /// <summary>
         /// Claim accumulated GAS rewards for a user.
         ///

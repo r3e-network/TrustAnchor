@@ -8,9 +8,17 @@ name: Generate Key
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: generate-key
+  cancel-in-progress: false
+
 jobs:
   main:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -19,30 +27,44 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
       - name: Restore dependencies
         run: dotnet restore TrustAnchor/TrustAnchor.sln
 
       - name: Install Dependencies
-        run: npm install tweetsodium
+        run: npm install libsodium-wrappers
 
       - name: Generate Key
         run: |
           WIF_VALUE=$(dotnet run --project TrustAnchor/KeyGenerator)
+          if [ -z "$WIF_VALUE" ]; then
+            echo "::error::Key generation returned empty value"
+            exit 1
+          fi
           echo "::add-mask::$WIF_VALUE"
-          echo "WIF=$WIF_VALUE" >> $GITHUB_ENV
+          echo "WIF=$WIF_VALUE" >> "$GITHUB_ENV"
 
-      - name: GitHub Script
+      - name: Store Secret
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.USERTOKEN }}
           script: |
-            const sodium = require("tweetsodium");
+            const sodium = require("libsodium-wrappers");
+            await sodium.ready;
             const { owner, repo } = context.repo;
             const secret_name = "TEEWIF";
-            github.rest.actions.getRepoPublicKey({ owner, repo }).then(({ data }) => {
-                const encrypted_value = Buffer.from(
-                    sodium.seal(Buffer.from(process.env.WIF), Buffer.from(data.key, "base64"))
-                ).toString("base64");
-                const key_id = data.key_id;
-                github.rest.actions.createOrUpdateRepoSecret({ owner, repo, secret_name, encrypted_value, key_id });
+            const { data } = await github.rest.actions.getRepoPublicKey({ owner, repo });
+            const messageBytes = Buffer.from(process.env.WIF);
+            const keyBytes = Buffer.from(data.key, "base64");
+            const encrypted_value = Buffer.from(
+              sodium.crypto_box_seal(messageBytes, keyBytes)
+            ).toString("base64");
+            await github.rest.actions.createOrUpdateRepoSecret({
+              owner, repo, secret_name, encrypted_value, key_id: data.key_id
             });

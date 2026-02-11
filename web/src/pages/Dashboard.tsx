@@ -1,18 +1,10 @@
-import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Wallet, 
-  Users, 
-  TrendingUp, 
-  ArrowRight,
-  Shield,
-  PauseCircle,
-  PlayCircle
-} from 'lucide-react';
-import { Card, StatCard, Badge, EmptyState } from '../components';
-import { formatNumber, shortenHash } from '../abis/TrustAnchor';
-import { NETWORKS } from '../types';
-import type { Agent, StakeInfo, NetworkType } from '../types';
+import { useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Wallet, Users, TrendingUp, ArrowRight, Shield, PauseCircle, PlayCircle } from "lucide-react";
+import { Card, StatCard, Badge, EmptyState } from "../components";
+import { formatNumber, shortenHash } from "../abis/TrustAnchor";
+import { NETWORKS } from "../types";
+import type { Agent, StakeInfo, NetworkType } from "../types";
 
 // ============================================
 // Types
@@ -46,7 +38,7 @@ function HeroSection({ isPaused }: HeroSectionProps) {
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 p-8">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-      
+
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
@@ -55,7 +47,7 @@ function HeroSection({ isPaused }: HeroSectionProps) {
             </div>
             <h1 className="text-3xl font-bold text-white">TrustAnchor Dashboard</h1>
           </div>
-          
+
           {isPaused ? (
             <Badge variant="error" icon={<PauseCircle className="w-3 h-3" />}>
               Paused
@@ -66,23 +58,23 @@ function HeroSection({ isPaused }: HeroSectionProps) {
             </Badge>
           )}
         </div>
-        
+
         <p className="text-slate-400 max-w-2xl mb-6">
-          Non-profit decentralized NEO voting delegation system. 100% of GAS rewards 
-          are distributed to stakers based on their staked amount—no fees, no profit.
+          Non-profit decentralized NEO voting delegation system. 100% of GAS rewards are distributed to stakers based on
+          their staked amount—no fees, no profit.
         </p>
 
         <div className="flex flex-wrap gap-4">
-          <Link 
-            to="/staking" 
+          <Link
+            to="/staking"
             className="inline-flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
           >
             <TrendingUp className="w-5 h-5" />
             <span>Start Staking</span>
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link 
-            to="/agents" 
+          <Link
+            to="/agents"
             className="inline-flex items-center space-x-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors"
           >
             <Users className="w-5 h-5" />
@@ -112,7 +104,7 @@ function StatsGrid({ totalStake, agentCount, userStake, userReward, loading, con
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard
         title="Total Staked"
-        value={loading ? '...' : formatNumber(totalStake)}
+        value={loading ? "..." : formatNumber(totalStake)}
         subtitle="NEO"
         icon={<Wallet className="w-6 h-6" />}
         iconColor="blue"
@@ -120,7 +112,7 @@ function StatsGrid({ totalStake, agentCount, userStake, userReward, loading, con
       />
       <StatCard
         title="Active Agents"
-        value={loading ? '...' : agentCount}
+        value={loading ? "..." : agentCount}
         subtitle="of 21 max"
         icon={<Users className="w-6 h-6" />}
         iconColor="purple"
@@ -128,7 +120,7 @@ function StatsGrid({ totalStake, agentCount, userStake, userReward, loading, con
       />
       <StatCard
         title="Your Stake"
-        value={connected ? formatNumber(userStake) : '-'}
+        value={connected ? formatNumber(userStake) : "-"}
         subtitle="NEO"
         icon={<TrendingUp className="w-6 h-6" />}
         iconColor="green"
@@ -136,7 +128,7 @@ function StatsGrid({ totalStake, agentCount, userStake, userReward, loading, con
       />
       <StatCard
         title="Your Rewards"
-        value={connected ? formatNumber(userReward) : '-'}
+        value={connected ? formatNumber(userReward) : "-"}
         subtitle="GAS"
         icon={<TrendingUp className="w-6 h-6" />}
         iconColor="yellow"
@@ -160,7 +152,7 @@ interface ContractInfoCardProps {
 
 function ContractInfoCard({ network, contractHash, owner, isPaused, isOwner }: ContractInfoCardProps) {
   const explorerUrl = NETWORKS[network].blockExplorer;
-  
+
   return (
     <Card>
       <div className="flex items-center space-x-3 mb-6">
@@ -169,23 +161,23 @@ function ContractInfoCard({ network, contractHash, owner, isPaused, isOwner }: C
         </div>
         <h2 className="text-xl font-bold text-white">Contract Information</h2>
       </div>
-      
+
       <div className="space-y-4">
         <InfoRow label="Network" value={network.charAt(0).toUpperCase() + network.slice(1)} />
-        <InfoRow 
-          label="Contract Hash" 
+        <InfoRow
+          label="Contract Hash"
           value={shortenHash(contractHash)}
-          link={`${explorerUrl}/contract/${contractHash.replace('0x', '')}`}
+          link={`${explorerUrl}/contract/${contractHash.replace("0x", "")}`}
         />
-        <InfoRow 
-          label="Owner" 
+        <InfoRow
+          label="Owner"
           value={shortenHash(owner)}
-          badge={isOwner ? { text: 'You', variant: 'purple' } : undefined}
+          badge={isOwner ? { text: "You", variant: "purple" } : undefined}
         />
-        <InfoRow 
-          label="Status" 
-          value={isPaused ? 'Paused' : 'Active'}
-          valueColor={isPaused ? 'text-red-400' : 'text-green-400'}
+        <InfoRow
+          label="Status"
+          value={isPaused ? "Paused" : "Active"}
+          valueColor={isPaused ? "text-red-400" : "text-green-400"}
         />
       </div>
     </Card>
@@ -205,9 +197,7 @@ interface UserPositionCardProps {
 }
 
 function UserPositionCard({ connected, address, stake, reward, totalStake }: UserPositionCardProps) {
-  const poolShare = parseFloat(totalStake) > 0 
-    ? ((parseFloat(stake) / parseFloat(totalStake)) * 100).toFixed(4)
-    : '0';
+  const poolShare = parseFloat(totalStake) > 0 ? ((parseFloat(stake) / parseFloat(totalStake)) * 100).toFixed(4) : "0";
 
   return (
     <Card>
@@ -217,7 +207,7 @@ function UserPositionCard({ connected, address, stake, reward, totalStake }: Use
         </div>
         <h2 className="text-xl font-bold text-white">Your Position</h2>
       </div>
-      
+
       {!connected ? (
         <EmptyState
           icon={<Wallet className="w-12 h-12" />}
@@ -226,14 +216,10 @@ function UserPositionCard({ connected, address, stake, reward, totalStake }: Use
         />
       ) : (
         <div className="space-y-4">
-          <InfoRow label="Connected Address" value={shortenHash(address!)} />
+          <InfoRow label="Connected Address" value={shortenHash(address ?? "")} />
           <InfoRow label="Your Stake" value={`${formatNumber(stake)} NEO`} />
           <InfoRow label="Share of Pool" value={`${poolShare}%`} />
-          <InfoRow 
-            label="Claimable Rewards" 
-            value={`${formatNumber(reward)} GAS`}
-            valueColor="text-green-400"
-          />
+          <InfoRow label="Claimable Rewards" value={`${formatNumber(reward)} GAS`} valueColor="text-green-400" />
         </div>
       )}
     </Card>
@@ -258,8 +244,8 @@ function AgentsPreview({ agents }: AgentsPreviewProps) {
           </div>
           <h2 className="text-xl font-bold text-white">Active Agents</h2>
         </div>
-        <Link 
-          to="/agents" 
+        <Link
+          to="/agents"
           className="text-green-400 hover:text-green-300 text-sm font-medium flex items-center space-x-1"
         >
           <span>View All</span>
@@ -294,9 +280,7 @@ function AgentCard({ agent }: { agent: Agent }) {
         <span className="font-semibold text-white">{agent.name}</span>
         <span className="text-xs text-slate-500">#{agent.index}</span>
       </div>
-      <div className="text-xs text-slate-400 font-mono mb-2">
-        {shortenHash(agent.address, 8, 6)}
-      </div>
+      <div className="text-xs text-slate-400 font-mono mb-2">{shortenHash(agent.address, 8, 6)}</div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-slate-500">Priority:</span>
         <span className="text-green-400 font-medium">{agent.voting}</span>
@@ -313,17 +297,17 @@ interface InfoRowProps {
   label: string;
   value: string;
   link?: string;
-  badge?: { text: string; variant: 'purple' | 'success' | 'info' };
+  badge?: { text: string; variant: "purple" | "success" | "info" };
   valueColor?: string;
 }
 
-function InfoRow({ label, value, link, badge, valueColor = 'text-white' }: InfoRowProps) {
+function InfoRow({ label, value, link, badge, valueColor = "text-white" }: InfoRowProps) {
   return (
     <div className="flex items-center justify-between py-3 border-b border-slate-700/50 last:border-0">
       <span className="text-slate-400">{label}</span>
       <div className="flex items-center space-x-2">
         {link ? (
-          <a 
+          <a
             href={link}
             target="_blank"
             rel="noopener noreferrer"
@@ -334,7 +318,11 @@ function InfoRow({ label, value, link, badge, valueColor = 'text-white' }: InfoR
         ) : (
           <span className={`font-medium ${valueColor}`}>{value}</span>
         )}
-        {badge && <Badge variant={badge.variant} size="sm">{badge.text}</Badge>}
+        {badge && (
+          <Badge variant={badge.variant} size="sm">
+            {badge.text}
+          </Badge>
+        )}
       </div>
     </div>
   );

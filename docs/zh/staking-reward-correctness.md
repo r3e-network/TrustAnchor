@@ -3,22 +3,26 @@
 本文档说明 TrustAnchor 合约中“NEO 质押 + GAS 奖励分配”的算法与正确性。目标是帮助开发者理解奖励的来源、计算公式、关键存储字段，以及为何不会多发或少发（除整数截断产生的微小舍入误差）。
 
 相关代码位置：
-- `contract/TrustAnchor/TrustAnchor.cs`（质押/赎回/NEP-17 入口）
+
+- `contract/TrustAnchor/TrustAnchor.cs`（质押/赎回/NEP-17 入口、所有权管理）
 - `contract/TrustAnchor/TrustAnchor.Rewards.cs`（奖励核算与分配）
+- `contract/TrustAnchor/TrustAnchor.Agents.cs`（代理注册与投票管理）
+- `contract/TrustAnchor/TrustAnchor.View.cs`（只读查询方法）
 - `contract/TrustAnchor/TrustAnchor.Constants.cs`（存储前缀与常量）
 
 ## 1. 关键存储与常量
 
-| 名称 | 说明 | 代码常量 |
-| --- | --- | --- |
-| 全局 RPS | Reward Per Stake 累积值 | `PREFIXREWARDPERTOKENSTORED` |
-| 用户奖励 | 用户累积的可领取 GAS | `PREFIXREWARD` |
-| 用户 paid | 用户上次同步时的 RPS | `PREFIXPAID` |
-| 待分配奖励 | 无质押时进入的 GAS | `PREFIXPENDINGREWARD` |
-| 用户质押 | 用户质押 NEO 数量 | `PREFIXSTAKE` |
-| 总质押 | 合约总质押 NEO | `PREFIXTOTALSTAKE` |
+| 名称       | 说明                    | 代码常量                     |
+| ---------- | ----------------------- | ---------------------------- |
+| 全局 RPS   | Reward Per Stake 累积值 | `PREFIXREWARDPERTOKENSTORED` |
+| 用户奖励   | 用户累积的可领取 GAS    | `PREFIXREWARD`               |
+| 用户 paid  | 用户上次同步时的 RPS    | `PREFIXPAID`                 |
+| 待分配奖励 | 无质押时进入的 GAS      | `PREFIXPENDINGREWARD`        |
+| 用户质押   | 用户质押 NEO 数量       | `PREFIXSTAKE`                |
+| 总质押     | 合约总质押 NEO          | `PREFIXTOTALSTAKE`           |
 
 常量：
+
 - `RPS_SCALE = 100000000`（RPS 的小数缩放，8 位）
 - `DEFAULTCLAIMREMAIN = 100000000`（100% GAS 分配给质押者）
 
@@ -41,6 +45,7 @@ paid   = RPS
 ```
 
 其中：
+
 - `stake` 为用户当前质押 NEO
 - `paid` 为上次同步时刻的 RPS
 - `reward` 为用户已累计但尚未领取的奖励
@@ -48,31 +53,40 @@ paid   = RPS
 ## 3. 流程说明（与合约逻辑对应）
 
 ### 3.1 GAS 进入合约（分配奖励）
+
 入口：`OnNEP17Payment`。
+
 - 若 `totalStake > 0`，调用 `DistributeReward(amount, totalStake)` 更新 RPS。
 - 若 `totalStake == 0`，累加到 `pendingReward`，等待第一个质押出现后再分配。
 
 ### 3.2 NEO 质押
+
 入口：`OnNEP17Payment`。
+
 - 先 `SyncAccount(from)`，确保旧奖励入账。
 - 更新用户 `stake` 与全局 `totalStake`。
 - 若是首次质押（之前 `totalStake == 0`），把 `pendingReward` 立刻分配到 RPS。
 - 将 NEO 转给“投票最高的代理合约”，用于代理投票（优先级逻辑不影响奖励核算）。
 
 ### 3.3 赎回（Withdraw）
+
 入口：`Withdraw(account, amount)`。
+
 - 先 `SyncAccount`，确保持有期奖励被结算。
 - 减少用户 `stake` 与全局 `totalStake`。
 - 从低投票优先级的代理合约依次取回 NEO，直到满足提现数量。
 
 ### 3.4 领取奖励（ClaimReward）
+
 入口：`ClaimReward(account)`。
+
 - 先 `SyncAccount`，把最新 RPS 增量计入用户。
 - 把 `reward` 转出给用户，并清零。
 
 ## 4. 正确性说明（奖励守恒）
 
 设：
+
 - `s_i` 为第 i 个用户的质押
 - `RPS` 为全局累积值
 - 某次 GAS 分配使得 `ΔRPS = amount * DEFAULTCLAIMREMAIN / totalStake`
@@ -102,6 +116,7 @@ paid   = RPS
 ## 5. 整数截断与舍入误差
 
 实际实现使用整数除法，存在向下截断：
+
 - `ΔRPS = amount * DEFAULTCLAIMREMAIN / totalStake` 会截断；
 - `stake * (RPS - paid) / RPS_SCALE` 也会截断。
 
@@ -119,4 +134,3 @@ paid   = RPS
 - RPS 方案保证奖励与质押比例严格对应。
 - 所有奖励增量都由 GAS 进入合约触发，且不会超发。
 - 若需要更精确的分配，可提高 `RPS_SCALE`（需合约升级）。
-

@@ -3,10 +3,39 @@
 # .NET build artifacts
 **/bin/
 **/obj/
+*.nupkg
+*.snupkg
+*.user
+*.suo
+*.cache
+*.DotSettings.user
+
+# Node / Web
 **/node_modules/
+web/dist/
+web/.vite/
 
 # Neo Express local chain data
 .neo-express/
 
-# TrustAnchor ops env files
+# Environment and secrets — never commit
+.env
+.env.*
+!.env.example
 TrustAnchor/.env*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log

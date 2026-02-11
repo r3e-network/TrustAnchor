@@ -1,20 +1,20 @@
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  Wallet, 
-  LayoutDashboard, 
-  Coins, 
-  Users, 
-  Shield, 
-  ChevronDown, 
+import { Link, useLocation } from "react-router-dom";
+import {
+  Wallet,
+  LayoutDashboard,
+  Coins,
+  Users,
+  Shield,
+  ChevronDown,
   ExternalLink,
   Menu,
   X,
   LogOut,
-  Network
-} from 'lucide-react';
-import { useState, useCallback, useEffect } from 'react';
-import { Badge } from './ui';
-import type { NetworkType, WalletState } from '../types';
+  Network,
+} from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Badge } from "./ui";
+import type { NetworkType, WalletState } from "../types";
 
 // ============================================
 // Navigation Configuration
@@ -28,10 +28,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/staking', label: 'Staking', icon: Coins },
-  { path: '/agents', label: 'Agents', icon: Users },
-  { path: '/admin', label: 'Admin', icon: Shield, requiresOwner: true },
+  { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/staking", label: "Staking", icon: Coins },
+  { path: "/agents", label: "Agents", icon: Users },
+  { path: "/admin", label: "Admin", icon: Shield, requiresOwner: true },
 ];
 
 // ============================================
@@ -45,6 +45,7 @@ interface LayoutProps extends WalletState {
   readonly connect: () => Promise<boolean>;
   readonly disconnect: () => void;
   readonly isOwner: boolean;
+  readonly contractHash: string;
 }
 
 // ============================================
@@ -68,17 +69,14 @@ interface NavLinkProps {
 
 function NavLink({ item, isActive, onClick }: NavLinkProps) {
   const Icon = item.icon;
-  
+
   return (
     <Link
       to={item.path}
       onClick={onClick}
       className={`
         flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200
-        ${isActive 
-          ? 'bg-green-500/20 text-green-400' 
-          : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
-        }
+        ${isActive ? "bg-green-500/20 text-green-400" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"}
       `}
     >
       <Icon className="w-4 h-4" />
@@ -91,16 +89,17 @@ function NavLink({ item, isActive, onClick }: NavLinkProps) {
 // Main Layout Component
 // ============================================
 
-export function Layout({ 
-  children, 
-  network, 
+export function Layout({
+  children,
+  network,
   setNetwork,
   connected,
   connecting,
   address,
   connect,
   disconnect,
-  isOwner
+  isOwner,
+  contractHash,
 }: LayoutProps) {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -116,10 +115,10 @@ export function Layout({
     const handleClickOutside = () => {
       setNetworkDropdownOpen(false);
     };
-    
+
     if (networkDropdownOpen) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
     }
   }, [networkDropdownOpen]);
 
@@ -127,16 +126,14 @@ export function Layout({
     try {
       await connect();
     } catch (error) {
-      console.error('Connection error:', error);
+      console.error("Connection error:", error);
     }
   }, [connect]);
 
   // Filter nav items based on ownership
-  const visibleNavItems = NAV_ITEMS.filter(item => 
-    !item.requiresOwner || (item.requiresOwner && isOwner)
-  );
+  const visibleNavItems = NAV_ITEMS.filter((item) => !item.requiresOwner || (item.requiresOwner && isOwner));
 
-  const currentNetworkLabel = network === 'testnet' ? 'Testnet' : 'Mainnet';
+  const currentNetworkLabel = network === "testnet" ? "Testnet" : "Mainnet";
 
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col">
@@ -155,13 +152,9 @@ export function Layout({
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center space-x-1" aria-label="Main navigation">
               {visibleNavItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  item={item}
-                  isActive={location.pathname === item.path}
-                />
+                <NavLink key={item.path} item={item} isActive={location.pathname === item.path} />
               ))}
             </nav>
 
@@ -172,15 +165,17 @@ export function Layout({
                 <button
                   onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
                   className="flex items-center space-x-2 px-3 py-2 bg-slate-800 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors"
+                  aria-label="Select network"
+                  aria-expanded={networkDropdownOpen}
                 >
                   <Network className="w-4 h-4" />
                   <span className="hidden sm:inline">{currentNetworkLabel}</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform ${networkDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 transition-transform ${networkDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
-                
+
                 {networkDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-40 bg-slate-800 rounded-xl border border-slate-700 shadow-xl z-20 py-1">
-                    {(['testnet', 'mainnet'] as NetworkType[]).map((net) => (
+                    {(["testnet", "mainnet"] as NetworkType[]).map((net) => (
                       <button
                         key={net}
                         onClick={() => {
@@ -189,10 +184,10 @@ export function Layout({
                         }}
                         className={`
                           w-full px-4 py-2 text-left text-sm hover:bg-slate-700 transition-colors
-                          ${network === net ? 'text-green-400' : 'text-slate-300'}
+                          ${network === net ? "text-green-400" : "text-slate-300"}
                         `}
                       >
-                        {net === 'testnet' ? 'Testnet' : 'Mainnet'}
+                        {net === "testnet" ? "Testnet" : "Mainnet"}
                       </button>
                     ))}
                   </div>
@@ -204,17 +199,18 @@ export function Layout({
                 <div className="flex items-center space-x-2">
                   <div className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-slate-800 rounded-lg">
                     <Wallet className="w-4 h-4 text-green-400" />
-                    <span className="text-sm font-medium text-slate-300">
-                      {formatAddress(address!)}
-                    </span>
+                    <span className="text-sm font-medium text-slate-300">{formatAddress(address!)}</span>
                     {isOwner && (
-                      <Badge variant="purple" size="sm">Owner</Badge>
+                      <Badge variant="purple" size="sm">
+                        Owner
+                      </Badge>
                     )}
                   </div>
                   <button
                     onClick={disconnect}
                     className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors"
                     title="Disconnect"
+                    aria-label="Disconnect wallet"
                   >
                     <LogOut className="w-5 h-5" />
                   </button>
@@ -226,7 +222,7 @@ export function Layout({
                   className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   <Wallet className="w-4 h-4" />
-                  <span>{connecting ? 'Connecting...' : 'Connect'}</span>
+                  <span>{connecting ? "Connecting..." : "Connect"}</span>
                 </button>
               )}
 
@@ -234,6 +230,8 @@ export function Layout({
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="md:hidden p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-slate-100"
+                aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={mobileMenuOpen}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -243,7 +241,7 @@ export function Layout({
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-700/50">
+          <nav className="md:hidden border-t border-slate-700/50" aria-label="Mobile navigation">
             <div className="px-4 py-3 space-y-1">
               {visibleNavItems.map((item) => (
                 <NavLink
@@ -254,13 +252,22 @@ export function Layout({
                 />
               ))}
             </div>
-          </div>
+          </nav>
         )}
       </header>
 
       {/* Main Content */}
       <main className="flex-1 pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {network === "mainnet" && !contractHash && (
+            <div className="mb-6 flex items-center space-x-3 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <Network className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+              <p className="text-yellow-300 text-sm">
+                Mainnet contract is not yet deployed. Please switch to <strong>Testnet</strong> to interact with
+                TrustAnchor.
+              </p>
+            </div>
+          )}
           {children}
         </div>
       </main>
@@ -274,18 +281,18 @@ export function Layout({
               <span>TrustAnchor - Non-Profit NEO Voting Delegation</span>
             </div>
             <div className="flex items-center space-x-6 text-sm">
-              <a 
-                href="https://github.com/r3e-network/TrustAnchor" 
-                target="_blank" 
+              <a
+                href="https://github.com/r3e-network/TrustAnchor"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-1 text-slate-500 hover:text-slate-300 transition-colors"
               >
                 <span>GitHub</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
-              <a 
-                href="https://neo.org" 
-                target="_blank" 
+              <a
+                href="https://neo.org"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center space-x-1 text-slate-500 hover:text-slate-300 transition-colors"
               >

@@ -1,5 +1,11 @@
 # TrustAnchor Threat Model
 
+> **IMPORTANT: This threat model is outdated.** It was written against an earlier version of the contract
+> that used a weight-based configuration system (`BeginConfig/FinalizeConfig`, `RebalanceVotes`, etc.).
+> The contract has since been refactored to a simpler agent registry model with manual voting priority.
+> Many attack vectors and mitigations reference functions that no longer exist. A new threat model
+> against the current codebase is recommended.
+
 ## Overview
 
 **System:** TrustAnchor - NEO Staking and Voting Delegation Protocol
@@ -33,17 +39,17 @@
 **Attack Vectors:**
 
 1. **Reentrancy in ClaimReward** (CRITICAL-1)
-   - Attacker calls ClaimReward → re-enters during GAS transfer → claims twice
-   - Impact: Drain all GAS rewards
+    - Attacker calls ClaimReward → re-enters during GAS transfer → claims twice
+    - Impact: Drain all GAS rewards
 
 2. **Configuration Manipulation**
-   - Malicious owner sets extreme weights
-   - Sets all agents to same candidate (centralization)
-   - Impact: Voting power concentration, fund lockup
+    - Malicious owner sets extreme weights
+    - Sets all agents to same candidate (centralization)
+    - Impact: Voting power concentration, fund lockup
 
 3. **RPS Manipulation**
-   - If totalStake can be manipulated, RPS calculation breaks
-   - Impact: Incorrect reward distribution
+    - If totalStake can be manipulated, RPS calculation breaks
+    - Impact: Incorrect reward distribution
 
 **Mitigations:**
 
@@ -96,24 +102,24 @@
 **Attack Vectors:**
 
 1. **Fund Lockup** (CRITICAL-2)
-   - Withdraw all NEO from agents
-   - Remaining users cannot withdraw
-   - Impact: Permanent DoS for affected users
+    - Withdraw all NEO from agents
+    - Remaining users cannot withdraw
+    - Impact: Permanent DoS for affected users
 
 2. **Gas Griefing** (MEDIUM-1)
-   - Owner calls RebalanceVotes() repeatedly
-   - Users pay increased gas fees
-   - Impact: Economic DoS
+    - Owner calls RebalanceVotes() repeatedly
+    - Users pay increased gas fees
+    - Impact: Economic DoS
 
 3. **Config Abandonment** (MEDIUM-6)
-   - Call BeginConfig() but never FinalizeConfig()
-   - Blocks all future config updates
-   - Impact: Administrative DoS
+    - Call BeginConfig() but never FinalizeConfig()
+    - Blocks all future config updates
+    - Impact: Administrative DoS
 
 4. **Agent Exhaustion**
-   - Fill agent contracts with dust NEO
-   - Withdrawals require iterating through all agents
-   - Impact: Gas exhaustion
+    - Fill agent contracts with dust NEO
+    - Withdrawals require iterating through all agents
+    - Impact: Gas exhaustion
 
 **Mitigations:**
 
@@ -133,19 +139,19 @@
 **Attack Vectors:**
 
 1. **Agent Compromise** (HIGH-2)
-   - Deploy malicious agent contract
-   - Call SetAgent() to point to it
-   - Agent can drain funds from TrustAnchor
+    - Deploy malicious agent contract
+    - Call SetAgent() to point to it
+    - Agent can drain funds from TrustAnchor
 
 2. **Owner Key Compromise**
-   - Private key theft
-   - Time lock provides 3-day window to detect
-   - Impact: Full control of contract
+    - Private key theft
+    - Time lock provides 3-day window to detect
+    - Impact: Full control of contract
 
 3. **Bypass Time Lock** (HIGH-5)
-   - Manipulate Runtime.Time via consensus attack
-   - Accept owner transfer immediately
-   - Impact: Privilege escalation
+    - Manipulate Runtime.Time via consensus attack
+    - Accept owner transfer immediately
+    - Impact: Privilege escalation
 
 **Mitigations:**
 
@@ -321,24 +327,24 @@ Hijack Voting Power
 ### Desired Properties
 
 1. **Correctness:**
-   - Rewards distributed proportionally to stake
-   - RPS calculation is mathematically sound ✓
-   - Withdrawals return correct amount ✓
+    - Rewards distributed proportionally to stake
+    - RPS calculation is mathematically sound ✓
+    - Withdrawals return correct amount ✓
 
 2. **Liveness:**
-   - Users can always withdraw ⚠️ (CRITICAL-2)
-   - Owner can update configuration ⚠️ (MEDIUM-6)
-   - Contract can be upgraded ✓
+    - Users can always withdraw ⚠️ (CRITICAL-2)
+    - Owner can update configuration ⚠️ (MEDIUM-6)
+    - Contract can be upgraded ✓
 
 3. **Safety:**
-   - No double-spending of rewards ⚠️ (CRITICAL-1)
-   - No unauthorized fund transfers ⚠️ (HIGH-2)
-   - No privilege escalation ⚠️ (HIGH-5)
+    - No double-spending of rewards ⚠️ (CRITICAL-1)
+    - No unauthorized fund transfers ⚠️ (HIGH-2)
+    - No privilege escalation ⚠️ (HIGH-5)
 
 4. **Fairness:**
-   - All stakers earn proportional rewards ✓
-   - No staker can jump queue ✓
-   - Voting power follows weights ✓
+    - All stakers earn proportional rewards ✓
+    - No staker can jump queue ✓
+    - Voting power follows weights ✓
 
 ### Threats to Properties
 
@@ -360,45 +366,45 @@ Hijack Voting Power
 
 1. **Implement Reentrancy Guard**
 
-   ```csharp
-   private const byte PREFIXREENTRANCYLOCK = 0xFF;
+    ```csharp
+    private const byte PREFIXREENTRANCYLOCK = 0xFF;
 
-   public static void ClaimReward(UInt160 account)
-   {
-       // Set lock before external call
-       Storage.Put(..., PREFIXREENTRANCYLOCK, 1);
-       // ... transfer logic ...
-       Storage.Delete(..., PREFIXREENTRANCYLOCK);
-   }
-   ```
+    public static void ClaimReward(UInt160 account)
+    {
+        // Set lock before external call
+        Storage.Put(..., PREFIXREENTRANCYLOCK, 1);
+        // ... transfer logic ...
+        Storage.Delete(..., PREFIXREENTRANCYLOCK);
+    }
+    ```
 
 2. **Add Emergency Withdrawal**
 
-   ```csharp
-   public static void EmergencyWithdraw(UInt160 account)
-   {
-       ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
-       // Direct transfer from contract if agents empty
-   }
-   ```
+    ```csharp
+    public static void EmergencyWithdraw(UInt160 account)
+    {
+        ExecutionEngine.Assert(Runtime.CheckWitness(Owner()));
+        // Direct transfer from contract if agents empty
+    }
+    ```
 
 3. **Validate Agent Contracts**
 
-   ```csharp
-   public static void SetAgent(BigInteger i, UInt160 agent)
-   {
-       // Verify agent implements expected interface
-       var result = Contract.Call(agent, "sync", CallFlags.All);
-       // Check result is valid
-   }
-   ```
+    ```csharp
+    public static void SetAgent(BigInteger i, UInt160 agent)
+    {
+        // Verify agent implements expected interface
+        var result = Contract.Call(agent, "sync", CallFlags.All);
+        // Check result is valid
+    }
+    ```
 
 4. **Add Overflow Checks**
-   ```csharp
-   // In SyncAccount
-   BigInteger rawEarned = stake * (rps - paid);
-   ExecutionEngine.Assert(rawEarned / stake == (rps - paid)); // No overflow
-   ```
+    ```csharp
+    // In SyncAccount
+    BigInteger rawEarned = stake * (rps - paid);
+    ExecutionEngine.Assert(rawEarned / stake == (rps - paid)); // No overflow
+    ```
 
 ### Long-term Improvements
 

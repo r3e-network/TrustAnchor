@@ -462,7 +462,7 @@ interface OwnerTransferProps {
   onRefresh: () => Promise<void>;
 }
 
-function OwnerTransfer({ onPropose, onCancel, onRefresh }: OwnerTransferProps) {
+function OwnerTransfer({ onPropose, onAccept, onCancel, onRefresh }: OwnerTransferProps) {
   const [newOwner, setNewOwner] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -487,6 +487,19 @@ function OwnerTransfer({ onPropose, onCancel, onRefresh }: OwnerTransferProps) {
       await onRefresh();
     } else {
       toast.error(result.message || "Proposal failed");
+    }
+  };
+
+  const handleAccept = async () => {
+    setIsLoading(true);
+    const result = await onAccept();
+    setIsLoading(false);
+
+    if (result.status !== "error") {
+      toast.success("Ownership accepted successfully!");
+      await onRefresh();
+    } else {
+      toast.error(result.message || "Accept failed");
     }
   };
 
@@ -531,6 +544,10 @@ function OwnerTransfer({ onPropose, onCancel, onRefresh }: OwnerTransferProps) {
 
           <Button variant="secondary" onClick={handleTransfer} isLoading={isLoading} fullWidth>
             Propose Transfer
+          </Button>
+
+          <Button onClick={handleAccept} isLoading={isLoading} fullWidth>
+            Accept Ownership
           </Button>
 
           <Button variant="danger" onClick={handleCancel} isLoading={isLoading} fullWidth>

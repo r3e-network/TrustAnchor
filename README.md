@@ -38,17 +38,16 @@ dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 TrustAnchor/
 ├── contract/                       # Smart contract source code
 │   ├── TrustAnchor/               # Main staking and delegation contract
-│   │   ├── TrustAnchor.cs
-│   │   └── TrustAnchor.csproj
 │   ├── TrustAnchorAgent/          # Agent contract for voting
-│   │   ├── TrustAnchorAgent.cs
-│   │   └── TrustAnchorAgent.csproj
 │   ├── TrustAnchor.Tests/         # Test suite
 │   └── README.md                  # Contract documentation
 ├── TrustAnchor/                   # Operational automation tools
 │   ├── TrustAnchorClaimer         # Automated GAS claiming
 │   ├── TrustAnchorRepresentative  # Automated GAS distribution
 │   └── README.md                  # Ops documentation
+├── web/                            # React + TypeScript dashboard
+├── scripts/                        # Deployment and utility scripts
+├── docs/                           # Design plans and security docs
 └── .github/workflows/              # CI/CD workflows
 ```
 
@@ -160,11 +159,10 @@ The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational
 
 See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
 
-
 ## License
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
-See [LICENSE](contract/LICENSE) for full terms.
+See [LICENSE](LICENSE) for full terms.
 
 ## Contributing
 

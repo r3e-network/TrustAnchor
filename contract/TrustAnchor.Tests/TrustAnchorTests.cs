@@ -58,6 +58,9 @@ public class TrustAnchorTests
             "RPS",
             "TotalStake",
             "StakeOf",
+            "RewardOf",
+            "PendingOwner",
+            "OwnerTransferProposedAt",
             "AgentTarget",
             "AgentName",
             "AgentVoting",
@@ -331,50 +334,118 @@ public class TrustAnchorTests
         AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "setAgentVotingByTarget", fixture.AgentCandidate(1), new BigInteger(1)));
     }
 
+    // ========================================
+    // Two-Step Owner Transfer Tests
+    // ========================================
+
     [Fact]
-    public void Owner_transfer_to_zero_address_faults()
+    public void ProposeOwner_to_zero_address_faults()
     {
         var fixture = new TrustAnchorFixture();
-        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "transferOwner", UInt160.Zero));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "proposeOwner", UInt160.Zero));
     }
 
     [Fact]
-    public void Owner_transfer_requires_owner_witness()
+    public void ProposeOwner_requires_owner_witness()
     {
         var fixture = new TrustAnchorFixture();
-        AssertFault(() => fixture.CallFrom(fixture.OtherHash, "transferOwner", fixture.UserHash));
+        AssertFault(() => fixture.CallFrom(fixture.OtherHash, "proposeOwner", fixture.UserHash));
     }
 
     [Fact]
-    public void Owner_transfer_same_as_current_fails()
+    public void ProposeOwner_same_as_current_faults()
     {
         var fixture = new TrustAnchorFixture();
-        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "transferOwner", fixture.OwnerHash));
+        AssertFault(() => fixture.CallFrom(fixture.OwnerHash, "proposeOwner", fixture.OwnerHash));
     }
 
     [Fact]
-    public void Owner_transfer_is_immediate()
+    public void ProposeOwner_sets_pending_owner()
     {
         var fixture = new TrustAnchorFixture();
         var newOwner = fixture.OtherHash;
 
-        fixture.CallFrom(fixture.OwnerHash, "transferOwner", newOwner);
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner);
 
-        Assert.Equal(newOwner, fixture.Call<UInt160>("owner"));
+        // Owner should NOT change yet
+        Assert.Equal(fixture.OwnerHash, fixture.Call<UInt160>("owner"));
+        // Pending owner should be set
+        Assert.Equal(newOwner, fixture.Call<UInt160>("pendingOwner"));
     }
 
     [Fact]
-    public void Multiple_owner_transfers_sequence()
+    public void AcceptOwner_completes_transfer()
+    {
+        var fixture = new TrustAnchorFixture();
+        var newOwner = fixture.OtherHash;
+
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner);
+        fixture.CallFrom(newOwner, "acceptOwner");
+
+        Assert.Equal(newOwner, fixture.Call<UInt160>("owner"));
+        Assert.Equal(UInt160.Zero, fixture.Call<UInt160>("pendingOwner"));
+    }
+
+    [Fact]
+    public void AcceptOwner_without_proposal_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        AssertFault(() => fixture.CallFrom(fixture.OtherHash, "acceptOwner"));
+    }
+
+    [Fact]
+    public void AcceptOwner_wrong_witness_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", fixture.OtherHash);
+
+        // UserHash is not the pending owner — should fault
+        AssertFault(() => fixture.CallFrom(fixture.UserHash, "acceptOwner"));
+    }
+
+    [Fact]
+    public void CancelOwnerProposal_clears_pending()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", fixture.OtherHash);
+        Assert.Equal(fixture.OtherHash, fixture.Call<UInt160>("pendingOwner"));
+
+        fixture.CallFrom(fixture.OwnerHash, "cancelOwnerProposal");
+        Assert.Equal(UInt160.Zero, fixture.Call<UInt160>("pendingOwner"));
+    }
+
+    [Fact]
+    public void CancelOwnerProposal_non_owner_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", fixture.OtherHash);
+
+        AssertFault(() => fixture.CallFrom(fixture.UserHash, "cancelOwnerProposal"));
+    }
+
+    [Fact]
+    public void Sequential_owner_transfers_via_two_step()
     {
         var fixture = new TrustAnchorFixture();
         var newOwner1 = fixture.OtherHash;
         var newOwner2 = fixture.UserHash;
 
-        fixture.CallFrom(fixture.OwnerHash, "transferOwner", newOwner1);
+        // First transfer: Owner → Other
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner1);
+        fixture.CallFrom(newOwner1, "acceptOwner");
         Assert.Equal(newOwner1, fixture.Call<UInt160>("owner"));
 
-        fixture.CallFrom(newOwner1, "transferOwner", newOwner2);
+        // Second transfer: Other → User
+        fixture.CallFrom(newOwner1, "proposeOwner", newOwner2);
+        fixture.CallFrom(newOwner2, "acceptOwner");
         Assert.Equal(newOwner2, fixture.Call<UInt160>("owner"));
+    }
+
+    [Fact]
+    public void PendingOwner_returns_zero_initially()
+    {
+        var fixture = new TrustAnchorFixture();
+        Assert.Equal(UInt160.Zero, fixture.Call<UInt160>("pendingOwner"));
     }
 
     [Fact]

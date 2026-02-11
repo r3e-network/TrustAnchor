@@ -31,35 +31,41 @@ public sealed class TrustAnchorFixture
 
     private static string FindCompilerDirectory()
     {
-        // Try multiple possible locations for the Neo compiler
-        var possiblePaths = new[]
+        var homes = new[]
         {
-            // Standard dotnet tool location
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".dotnet", "tools", ".store", "neo.compiler.csharp", "3.8.1",
-                "neo.compiler.csharp", "3.8.1", "tools", "net9.0", "any"),
-            // Alternative net8.0 location
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".dotnet", "tools", ".store", "neo.compiler.csharp", "3.8.1",
-                "neo.compiler.csharp", "3.8.1", "tools", "net8.0", "any"),
-            // GitHub Actions runner location
-            Path.Combine("/home", "runner", ".dotnet", "tools", ".store",
-                "neo.compiler.csharp", "3.8.1", "neo.compiler.csharp", "3.8.1",
-                "tools", "net9.0", "any"),
-            Path.Combine("/home", "runner", ".dotnet", "tools", ".store",
-                "neo.compiler.csharp", "3.8.1", "neo.compiler.csharp", "3.8.1",
-                "tools", "net8.0", "any"),
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "/home/runner",
         };
+        var tfms = new[] { "net10.0", "net9.0", "net8.0" };
 
-        foreach (var path in possiblePaths)
+        foreach (var home in homes)
         {
-            var nccsPath = Path.Combine(path, "nccs.dll");
-            if (File.Exists(nccsPath))
-                return path;
+            var storeDir = Path.Combine(home, ".dotnet", "tools", ".store", "neo.compiler.csharp");
+            if (!Directory.Exists(storeDir)) continue;
+
+            // Discover installed versions, prefer newest
+            var versions = Directory.GetDirectories(storeDir)
+                .Select(Path.GetFileName)
+                .OrderByDescending(v => v)
+                .ToArray();
+
+            foreach (var ver in versions)
+            {
+                foreach (var tfm in tfms)
+                {
+                    var path = Path.Combine(storeDir, ver!, "neo.compiler.csharp", ver!, "tools", tfm, "any");
+                    if (File.Exists(Path.Combine(path, "nccs.dll")))
+                        return path;
+                }
+            }
         }
 
-        // Fallback to first path (will fail with clear error message)
-        return possiblePaths[0];
+        // Fallback with clear error context
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".dotnet", "tools", ".store", "neo.compiler.csharp",
+            "VERSION_NOT_FOUND", "neo.compiler.csharp", "VERSION_NOT_FOUND",
+            "tools", "net9.0", "any");
     }
 
     private static bool _resolverInitialized;

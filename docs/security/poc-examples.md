@@ -1,5 +1,11 @@
 # Proof of Concepts for TrustAnchor Vulnerabilities
 
+> **IMPORTANT: These PoC examples are outdated.** They were written against an earlier version of the
+> contract that used a weight-based configuration system. The contract has since been refactored to a
+> simpler agent registry model. Many attack scenarios reference functions that no longer exist
+> (e.g., `BeginConfig`, `FinalizeConfig`, `SetAgentConfig`, `RebalanceVotes`). Key fixes already
+> applied include: emergency withdrawal, agent contract verification, and two-step owner transfer.
+
 ## Overview
 
 This document provides proof-of-concept code and test cases for the critical vulnerabilities identified in the TrustAnchor security audit.

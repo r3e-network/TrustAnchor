@@ -1,17 +1,9 @@
-import { useState } from 'react';
-import { 
-  Coins, 
-  ArrowDownCircle, 
-  ArrowUpCircle,
-  Gift,
-  AlertTriangle,
-  Info,
-  CheckCircle2
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import { Card, Button, Input, StatCard, ConfirmModal } from '../components';
-import { formatNumber } from '../abis/TrustAnchor';
-import type { StakeInfo, TransactionResult } from '../types';
+import { useState } from "react";
+import { Coins, ArrowDownCircle, ArrowUpCircle, Gift, AlertTriangle, Info, CheckCircle2 } from "lucide-react";
+import toast from "react-hot-toast";
+import { Card, Button, Input, StatCard, ConfirmModal } from "../components";
+import { formatNumber } from "../abis/TrustAnchor";
+import type { StakeInfo, TransactionResult } from "../types";
 
 // ============================================
 // Types
@@ -43,9 +35,7 @@ function ActionCard({ title, description, icon, iconColor, children }: ActionCar
   return (
     <Card>
       <div className="flex items-center space-x-3 mb-6">
-        <div className={`p-3 rounded-xl ${iconColor}`}>
-          {icon}
-        </div>
+        <div className={`p-3 rounded-xl ${iconColor}`}>{icon}</div>
         <div>
           <h2 className="text-xl font-bold text-white">{title}</h2>
           <p className="text-sm text-slate-400">{description}</p>
@@ -67,29 +57,38 @@ interface DepositFormProps {
 }
 
 function DepositForm({ connected, isPaused, onDeposit }: DepositFormProps) {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error('Please enter a valid amount');
+    const parsed = parseInt(amount, 10);
+    if (!amount || isNaN(parsed) || parsed <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (String(parsed) !== amount.trim()) {
+      toast.error("NEO is indivisible — please enter a whole number");
       return;
     }
 
     setIsLoading(true);
-    const result = await onDeposit(parseFloat(amount));
-    setIsLoading(false);
-
-    if (result.status !== 'error') {
-      toast.success(
-        <div>
-          <p className="font-semibold">Deposit submitted!</p>
-          <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
-        </div>
-      );
-      setAmount('');
-    } else {
-      toast.error(result.message || 'Deposit failed');
+    try {
+      const result = await onDeposit(parsed);
+      if (result.status !== "error") {
+        toast.success(
+          <div>
+            <p className="font-semibold">Deposit submitted!</p>
+            <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
+          </div>,
+        );
+        setAmount("");
+      } else {
+        toast.error(result.message || "Deposit failed");
+      }
+    } catch {
+      toast.error("Deposit failed unexpectedly");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -117,15 +116,11 @@ function DepositForm({ connected, isPaused, onDeposit }: DepositFormProps) {
         label="Amount (NEO)"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
-        placeholder="Enter amount"
+        placeholder="Enter whole number"
         min="1"
+        step="1"
       />
-      <Button
-        onClick={handleSubmit}
-        isLoading={isLoading}
-        leftIcon={<ArrowDownCircle className="w-5 h-5" />}
-        fullWidth
-      >
+      <Button onClick={handleSubmit} isLoading={isLoading} leftIcon={<ArrowDownCircle className="w-5 h-5" />} fullWidth>
         Deposit NEO
       </Button>
       <p className="text-xs text-slate-500 flex items-start space-x-1">
@@ -147,35 +142,44 @@ interface WithdrawFormProps {
 }
 
 function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleMaxClick = () => setAmount(maxAmount);
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error('Please enter a valid amount');
+    const parsed = parseInt(amount, 10);
+    if (!amount || isNaN(parsed) || parsed <= 0) {
+      toast.error("Please enter a valid amount");
       return;
     }
-    if (parseFloat(amount) > parseFloat(maxAmount)) {
-      toast.error('Insufficient staked balance');
+    if (String(parsed) !== amount.trim()) {
+      toast.error("NEO is indivisible — please enter a whole number");
+      return;
+    }
+    if (parsed > parseInt(maxAmount, 10)) {
+      toast.error("Insufficient staked balance");
       return;
     }
 
     setIsLoading(true);
-    const result = await onWithdraw(parseFloat(amount));
-    setIsLoading(false);
-
-    if (result.status !== 'error') {
-      toast.success(
-        <div>
-          <p className="font-semibold">Withdrawal submitted!</p>
-          <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
-        </div>
-      );
-      setAmount('');
-    } else {
-      toast.error(result.message || 'Withdrawal failed');
+    try {
+      const result = await onWithdraw(parsed);
+      if (result.status !== "error") {
+        toast.success(
+          <div>
+            <p className="font-semibold">Withdrawal submitted!</p>
+            <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
+          </div>,
+        );
+        setAmount("");
+      } else {
+        toast.error(result.message || "Withdrawal failed");
+      }
+    } catch {
+      toast.error("Withdrawal failed unexpectedly");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -187,7 +191,7 @@ function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
     );
   }
 
-  if (parseFloat(maxAmount) <= 0) {
+  if (parseInt(maxAmount, 10) <= 0) {
     return (
       <div className="text-center py-8 bg-slate-900/50 rounded-lg">
         <p className="text-slate-500">You have no staked NEO</p>
@@ -202,14 +206,12 @@ function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
         label="Amount (NEO)"
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
-        placeholder="Enter amount"
+        placeholder="Enter whole number"
         min="1"
+        step="1"
         max={maxAmount}
         rightIcon={
-          <button
-            onClick={handleMaxClick}
-            className="text-xs text-green-400 hover:text-green-300"
-          >
+          <button onClick={handleMaxClick} className="text-xs text-green-400 hover:text-green-300">
             Max
           </button>
         }
@@ -246,23 +248,27 @@ function ClaimCard({ connected, reward, onClaim }: ClaimCardProps) {
 
   const handleClaim = async () => {
     if (parseFloat(reward) <= 0) {
-      toast.error('No rewards to claim');
+      toast.error("No rewards to claim");
       return;
     }
 
     setIsLoading(true);
-    const result = await onClaim();
-    setIsLoading(false);
-
-    if (result.status !== 'error') {
-      toast.success(
-        <div>
-          <p className="font-semibold">Rewards claimed!</p>
-          <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
-        </div>
-      );
-    } else {
-      toast.error(result.message || 'Claim failed');
+    try {
+      const result = await onClaim();
+      if (result.status !== "error") {
+        toast.success(
+          <div>
+            <p className="font-semibold">Rewards claimed!</p>
+            <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
+          </div>,
+        );
+      } else {
+        toast.error(result.message || "Claim failed");
+      }
+    } catch {
+      toast.error("Claim failed unexpectedly");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -276,9 +282,7 @@ function ClaimCard({ connected, reward, onClaim }: ClaimCardProps) {
           <div>
             <h2 className="text-xl font-bold text-white">Claim Rewards</h2>
             <p className="text-slate-400">
-              {connected 
-                ? `You have ${formatNumber(reward)} GAS available to claim`
-                : 'Connect wallet to view rewards'}
+              {connected ? `You have ${formatNumber(reward)} GAS available to claim` : "Connect wallet to view rewards"}
             </p>
           </div>
         </div>
@@ -311,19 +315,23 @@ function EmergencySection({ connected, stake, onEmergencyWithdraw }: EmergencySe
 
   const handleConfirm = async () => {
     setIsLoading(true);
-    const result = await onEmergencyWithdraw();
-    setIsLoading(false);
-
-    if (result.status !== 'error') {
-      toast.success(
-        <div>
-          <p className="font-semibold">Emergency withdrawal submitted!</p>
-          <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
-        </div>
-      );
-      setShowModal(false);
-    } else {
-      toast.error(result.message || 'Emergency withdrawal failed');
+    try {
+      const result = await onEmergencyWithdraw();
+      if (result.status !== "error") {
+        toast.success(
+          <div>
+            <p className="font-semibold">Emergency withdrawal submitted!</p>
+            <p className="text-xs">TX: {result.txid.slice(0, 10)}...</p>
+          </div>,
+        );
+        setShowModal(false);
+      } else {
+        toast.error(result.message || "Emergency withdrawal failed");
+      }
+    } catch {
+      toast.error("Emergency withdrawal failed unexpectedly");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -335,15 +343,10 @@ function EmergencySection({ connected, stake, onEmergencyWithdraw }: EmergencySe
           <div className="flex-1">
             <h3 className="text-lg font-semibold text-red-400 mb-2">Emergency Withdrawal</h3>
             <p className="text-slate-400 text-sm mb-4">
-              Only available when the contract is paused and all agents have zero NEO balance. 
-              This is a safety mechanism for extreme scenarios. Use with caution.
+              Only available when the contract is paused and all agents have zero NEO balance. This is a safety
+              mechanism for extreme scenarios. Use with caution.
             </p>
-            <Button
-              variant="danger"
-              size="sm"
-              onClick={() => setShowModal(true)}
-              disabled={!connected}
-            >
+            <Button variant="danger" size="sm" onClick={() => setShowModal(true)} disabled={!connected}>
               Emergency Withdraw
             </Button>
           </div>
@@ -377,9 +380,10 @@ export function Staking({
   claimReward,
   emergencyWithdraw,
 }: StakingProps) {
-  const poolShare = parseFloat(stakeInfo.totalStake) > 0 
-    ? ((parseFloat(stakeInfo.stake) / parseFloat(stakeInfo.totalStake)) * 100).toFixed(4)
-    : '0';
+  const poolShare =
+    parseFloat(stakeInfo.totalStake) > 0
+      ? ((parseFloat(stakeInfo.stake) / parseFloat(stakeInfo.totalStake)) * 100).toFixed(4)
+      : "0";
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -387,8 +391,8 @@ export function Staking({
       <div className="text-center max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-4">Staking</h1>
         <p className="text-slate-400">
-          Stake your NEO to earn GAS rewards. 100% of rewards are distributed to stakers 
-          proportionally—no platform fees.
+          Stake your NEO to earn GAS rewards. 100% of rewards are distributed to stakers proportionally—no platform
+          fees.
         </p>
       </div>
 
@@ -396,21 +400,21 @@ export function Staking({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
         <StatCard
           title="Your Staked"
-          value={connected ? formatNumber(stakeInfo.stake) : '-'}
+          value={connected ? formatNumber(stakeInfo.stake) : "-"}
           subtitle="NEO"
           icon={<Coins className="w-8 h-8" />}
           iconColor="green"
         />
         <StatCard
           title="Claimable Rewards"
-          value={connected ? formatNumber(stakeInfo.reward) : '-'}
+          value={connected ? formatNumber(stakeInfo.reward) : "-"}
           subtitle="GAS"
           icon={<Gift className="w-8 h-8" />}
           iconColor="yellow"
         />
         <StatCard
           title="Pool Share"
-          value={connected ? `${poolShare}%` : '-'}
+          value={connected ? `${poolShare}%` : "-"}
           subtitle="of total staked"
           icon={<CheckCircle2 className="w-8 h-8" />}
           iconColor="blue"
@@ -425,11 +429,7 @@ export function Staking({
           icon={<ArrowDownCircle className="w-6 h-6 text-green-400" />}
           iconColor="bg-green-500/20"
         >
-          <DepositForm
-            connected={connected}
-            isPaused={isPaused}
-            onDeposit={deposit}
-          />
+          <DepositForm connected={connected} isPaused={isPaused} onDeposit={deposit} />
         </ActionCard>
 
         <ActionCard
@@ -438,30 +438,18 @@ export function Staking({
           icon={<ArrowUpCircle className="w-6 h-6 text-blue-400" />}
           iconColor="bg-blue-500/20"
         >
-          <WithdrawForm
-            connected={connected}
-            maxAmount={stakeInfo.stake}
-            onWithdraw={withdraw}
-          />
+          <WithdrawForm connected={connected} maxAmount={stakeInfo.stake} onWithdraw={withdraw} />
         </ActionCard>
       </div>
 
       {/* Claim Rewards */}
       <div className="max-w-2xl mx-auto">
-        <ClaimCard
-          connected={connected}
-          reward={stakeInfo.reward}
-          onClaim={claimReward}
-        />
+        <ClaimCard connected={connected} reward={stakeInfo.reward} onClaim={claimReward} />
       </div>
 
       {/* Emergency Withdraw */}
       <div className="max-w-2xl mx-auto">
-        <EmergencySection
-          connected={connected}
-          stake={stakeInfo.stake}
-          onEmergencyWithdraw={emergencyWithdraw}
-        />
+        <EmergencySection connected={connected} stake={stakeInfo.stake} onEmergencyWithdraw={emergencyWithdraw} />
       </div>
     </div>
   );

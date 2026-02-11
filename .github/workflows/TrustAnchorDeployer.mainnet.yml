@@ -1,5 +1,10 @@
 name: TrustAnchorDeployer (Mainnet)
 
+# SECURITY: Deploys contracts to mainnet.
+# - Manual trigger only with dry-run default
+# - Uses GitHub environment protection rules
+# - Separate mainnet secrets (WIF_MAINNET, RPC_MAINNET)
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,9 +14,17 @@ on:
         default: "true"
         type: boolean
 
+permissions:
+  contents: read
+
+concurrency:
+  group: deployer-mainnet
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment:
       name: mainnet
       # NOTE: Protection rules (required reviewers, wait timer) must be
@@ -24,6 +37,13 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
       - name: Install Neo Compiler
         run: dotnet tool install --global Neo.Compiler.CSharp --version 3.8.1
 
@@ -31,9 +51,10 @@ jobs:
         run: dotnet restore TrustAnchor/TrustAnchor.sln
 
       - name: Verify Network Configuration
+        env:
+          RPC: ${{ secrets.RPC_MAINNET }}
         run: |
           echo "Verifying RPC endpoint..."
-          RPC="${{ secrets.RPC_MAINNET }}"
           if [ -z "$RPC" ]; then
             echo "::error::RPC_MAINNET secret is not configured"
             exit 1
@@ -45,7 +66,6 @@ jobs:
         run: |
           echo "=== DRY RUN MODE ==="
           echo "No transactions will be sent."
-          echo "Secrets configured: check GitHub Settings > Secrets"
 
       - name: Run Deployer (Dry Run)
         if: ${{ inputs.dry_run == true }}
@@ -57,9 +77,7 @@ jobs:
           DRY_RUN: "true"
         run: |
           echo "Starting dry run deployment..."
-          dotnet run --project TrustAnchor/TrustAnchorDeployer 2>&1 | while read line; do
-            echo "[DRY-RUN] $line"
-          done
+          dotnet run --project TrustAnchor/TrustAnchorDeployer
 
       - name: Run Deployer (Production)
         if: ${{ inputs.dry_run == false }}
@@ -70,13 +88,16 @@ jobs:
           CONTRACTS_DIR: contract
         run: |
           echo "=== PRODUCTION DEPLOYMENT ==="
-          echo "::warning::This will deploy contracts to MAINNET"
-          if [ -n "$WIF" ]; then echo "Deployer: configured"; else echo "::error::WIF_MAINNET not configured"; exit 1; fi
+          echo "::warning::Deploying contracts to MAINNET"
+          if [ -z "$WIF" ]; then
+            echo "::error::WIF_MAINNET not configured"
+            exit 1
+          fi
           dotnet run --project TrustAnchor/TrustAnchorDeployer
 
       - name: Deployment Report
-        if: ${{ always() }}
+        if: always()
         run: |
           echo "=== Deployment Complete ==="
-          echo "Review the output above for contract addresses."
+          echo "Review output above for contract addresses."
           echo "Verify contracts on Neo Explorer before proceeding."

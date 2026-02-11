@@ -1,5 +1,6 @@
 using System.Numerics;
 using Neo.SmartContract.Framework;
+using Neo.SmartContract.Framework.Native;
 using Neo.SmartContract.Framework.Services;
 
 namespace TrustAnchor
@@ -205,6 +206,7 @@ namespace TrustAnchor
             }
 
             ExecutionEngine.Assert(bestIndex >= 0);
+            ExecutionEngine.Assert(bestVoting > BigInteger.Zero, "No active agents");
             return bestIndex;
         }
 

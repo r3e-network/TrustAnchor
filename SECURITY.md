@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|--------|
+| Version | Supported          |
+| ------- | ------------------ |
 | 1.0.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
@@ -42,9 +42,10 @@ This project has been audited. See [docs/security/security-audit-report.md](docs
 ## Key Security Features
 
 - **Non-custodial**: Users maintain control of their assets
-- **Time-locked owner transfer**: 3-day delay prevents unauthorized ownership changes
-- **Reentrancy guards**: Prevents double-claiming attacks
-- **Config validation**: Weights must sum to 21, no duplicate targets
+- **Two-step owner transfer**: ProposeOwner → AcceptOwner (with CancelOwnerProposal) prevents accidental or unauthorized ownership changes
+- **Emergency pause**: Owner can pause deposits and enable emergency withdrawals
+- **Agent uniqueness**: Name and target public key uniqueness enforced, max 21 agents
+- **Contract verification**: Agent registration requires deployed contract validation via ContractManagement.GetContract
 
 ## Third-Party Dependencies
 
