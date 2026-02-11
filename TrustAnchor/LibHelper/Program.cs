@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using Neo;
+using Neo.Extensions;
 using Neo.SmartContract;
 using Neo.VM;
 using Neo.VM.Types;

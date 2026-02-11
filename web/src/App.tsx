@@ -27,20 +27,21 @@ function PageLoader() {
 
 function App() {
   const trustAnchor = useTrustAnchor();
+  const { contractHash, fetchContractState, connected, address, fetchUserStakeInfo } = trustAnchor;
 
   // Fetch contract state on mount and network change
   useEffect(() => {
-    if (trustAnchor.contractHash) {
-      trustAnchor.fetchContractState();
+    if (contractHash) {
+      fetchContractState();
     }
-  }, [trustAnchor.contractHash, trustAnchor.fetchContractState]);
+  }, [contractHash, fetchContractState]);
 
   // Fetch user stake info when connected
   useEffect(() => {
-    if (trustAnchor.connected && trustAnchor.address) {
-      trustAnchor.fetchUserStakeInfo(trustAnchor.address);
+    if (connected && address) {
+      fetchUserStakeInfo(address);
     }
-  }, [trustAnchor.connected, trustAnchor.address, trustAnchor.fetchUserStakeInfo]);
+  }, [connected, address, fetchUserStakeInfo]);
 
   const layoutProps = {
     ...trustAnchor,

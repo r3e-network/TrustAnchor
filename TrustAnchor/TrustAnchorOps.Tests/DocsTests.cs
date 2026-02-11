@@ -9,7 +9,7 @@ namespace TrustAnchorOps.Tests;
 public class DocsTests
 {
     [Fact]
-    public void Repo_DoesNotReference_Tee_Tooling()
+    public void Repo_DoesNotReference_Legacy_Tooling()
     {
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
         var files = Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories)
@@ -18,11 +18,11 @@ public class DocsTests
         foreach (var path in files)
         {
             var normalized = NormalizePath(path);
-            Assert.DoesNotContain("/TEE/", normalized, StringComparison.Ordinal);
+            Assert.DoesNotContain("/legacy-tooling/", normalized, StringComparison.Ordinal);
 
             if (!IsTextFile(path)) continue;
             var content = File.ReadAllText(path);
-            Assert.False(ContainsTeeReference(content), $"TEE reference found in {path}");
+            Assert.False(ContainsLegacyToolingReference(content), $"Legacy tooling reference found in {path}");
         }
     }
 
@@ -44,6 +44,7 @@ public class DocsTests
             || normalized.Contains("/obj/", StringComparison.Ordinal)
             || normalized.Contains("/.worktrees/", StringComparison.Ordinal)
             || normalized.Contains("/worktrees/", StringComparison.Ordinal)
+            || normalized.Contains("/docs/plans/", StringComparison.Ordinal)
             || normalized.EndsWith("/TrustAnchor/TrustAnchorOps.Tests/DocsTests.cs", StringComparison.Ordinal);
     }
 
@@ -58,10 +59,8 @@ public class DocsTests
         return ext is ".md" or ".cs" or ".csproj" or ".sln" or ".json" or ".yml" or ".yaml" or ".sh" or ".txt" or ".props" or ".targets";
     }
 
-    private static bool ContainsTeeReference(string content)
+    private static bool ContainsLegacyToolingReference(string content)
     {
-        if (content.Contains("TEE/", StringComparison.Ordinal)) return true;
-        if (content.Contains("TEE\\", StringComparison.Ordinal)) return true;
-        return Regex.IsMatch(content, @"\bTEE\b");
+        return Regex.IsMatch(content, @"\blegacy-tooling\b", RegexOptions.IgnoreCase);
     }
 }

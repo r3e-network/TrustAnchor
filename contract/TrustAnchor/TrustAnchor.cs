@@ -197,7 +197,7 @@ namespace TrustAnchor
                 if (transferAmount > BigInteger.Zero)
                 {
                     // Call agent's transfer method to send NEO back to user
-                    Contract.Call(agent, "transfer", CallFlags.States | CallFlags.AllowCall,
+                    Contract.Call(agent, "transfer", CallFlags.All,
                         new object[] { account, transferAmount });
                     remaining -= transferAmount;
                 }
@@ -278,6 +278,11 @@ namespace TrustAnchor
             ExecutionEngine.Assert(pending is not null, "No pending owner");
             UInt160 pendingOwner = (UInt160)(byte[])pending;
             ExecutionEngine.Assert(Runtime.CheckWitness(pendingOwner));
+
+            var proposedAt = Storage.Get(Storage.CurrentContext, new byte[] { PREFIXOWNERTRANSFERTIME });
+            ExecutionEngine.Assert(proposedAt is not null, "No pending owner");
+            BigInteger readyAt = (BigInteger)proposedAt + OWNER_TRANSFER_DELAY_SECONDS;
+            ExecutionEngine.Assert(Runtime.Time >= readyAt, "Owner transfer timelock active");
 
             // Transfer ownership
             Storage.Put(Storage.CurrentContext, new byte[] { PREFIXOWNER }, pendingOwner);

@@ -31,7 +31,7 @@ namespace TrustAnchorOps.Tests;
 public class DocsTests
 {
     [Fact]
-    public void Repo_DoesNotReference_Tee_Tooling()
+    public void Repo_DoesNotReference_Legacy_Tooling()
     {
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
         var content = string.Join("\n", Directory.GetFiles(root, "*.*", SearchOption.AllDirectories));
@@ -42,7 +42,7 @@ public class DocsTests
 
 **Step 2: Run test to verify it fails**
 
-Run: `dotnet test TrustAnchor/TrustAnchorOps.Tests/TrustAnchorOps.Tests.csproj --filter "Tee"`
+Run: `dotnet test TrustAnchor/TrustAnchorOps.Tests/TrustAnchorOps.Tests.csproj --filter "Legacy"`
 Expected: FAIL (references still exist / file missing).
 
 **Step 3: Remove legacy tooling directory and references**
@@ -52,7 +52,7 @@ Expected: FAIL (references still exist / file missing).
 
 **Step 4: Run test to verify it passes**
 
-Run: `dotnet test TrustAnchor/TrustAnchorOps.Tests/TrustAnchorOps.Tests.csproj --filter "Tee"`
+Run: `dotnet test TrustAnchor/TrustAnchorOps.Tests/TrustAnchorOps.Tests.csproj --filter "Legacy"`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -197,7 +197,7 @@ Expected: PASS.
 
 ```bash
 git add README.md SECURITY.md TrustAnchor/README.md TrustAnchor/TrustAnchorOps.Tests/DocsTests.cs
-git commit -m "docs: remove tee references and document tooling"
+git commit -m "docs: remove legacy tooling references and document tooling"
 ```
 
 ### Task 5: Full verification

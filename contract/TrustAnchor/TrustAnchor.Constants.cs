@@ -98,6 +98,9 @@ namespace TrustAnchor
         /// <summary>100% of GAS goes to stakers, no fees</summary>
         private static readonly BigInteger DEFAULTCLAIMREMAIN = 100000000;
 
+        /// <summary>Owner transfer timelock in seconds (3 days)</summary>
+        private static readonly BigInteger OWNER_TRANSFER_DELAY_SECONDS = 3 * 24 * 60 * 60;
+
         [InitialValue("[TODO]: ARGS", ContractParameterType.Hash160)]
         private static readonly UInt160 DEFAULT_OWNER = default;
     }

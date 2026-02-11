@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Neo;
 using Neo.Cryptography.ECC;
@@ -10,6 +11,8 @@ namespace TrustAnchor.Tests;
 
 public class TrustAnchorTests
 {
+    private static readonly TimeSpan OwnerTransferDelay = TimeSpan.FromDays(3);
+
     private static void AssertFault(Action action)
     {
         Assert.ThrowsAny<Neo.SmartContract.Testing.Exceptions.TestException>(action);
@@ -380,10 +383,24 @@ public class TrustAnchorTests
         var newOwner = fixture.OtherHash;
 
         fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner);
+        fixture.AdvanceTime(OwnerTransferDelay);
         fixture.CallFrom(newOwner, "acceptOwner");
 
         Assert.Equal(newOwner, fixture.Call<UInt160>("owner"));
         Assert.Equal(UInt160.Zero, fixture.Call<UInt160>("pendingOwner"));
+    }
+
+    [Fact]
+    public void AcceptOwner_before_delay_faults()
+    {
+        var fixture = new TrustAnchorFixture();
+        var newOwner = fixture.OtherHash;
+
+        fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner);
+
+        AssertFault(() => fixture.CallFrom(newOwner, "acceptOwner"));
+        Assert.Equal(fixture.OwnerHash, fixture.Call<UInt160>("owner"));
+        Assert.Equal(newOwner, fixture.Call<UInt160>("pendingOwner"));
     }
 
     [Fact]
@@ -432,11 +449,13 @@ public class TrustAnchorTests
 
         // First transfer: Owner → Other
         fixture.CallFrom(fixture.OwnerHash, "proposeOwner", newOwner1);
+        fixture.AdvanceTime(OwnerTransferDelay);
         fixture.CallFrom(newOwner1, "acceptOwner");
         Assert.Equal(newOwner1, fixture.Call<UInt160>("owner"));
 
         // Second transfer: Other → User
         fixture.CallFrom(newOwner1, "proposeOwner", newOwner2);
+        fixture.AdvanceTime(OwnerTransferDelay);
         fixture.CallFrom(newOwner2, "acceptOwner");
         Assert.Equal(newOwner2, fixture.Call<UInt160>("owner"));
     }

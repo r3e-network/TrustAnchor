@@ -176,6 +176,11 @@ public sealed class TrustAnchorFixture
         SetAgentVotingById(index, votingAmount);
     }
 
+    public void AdvanceTime(TimeSpan elapsed)
+    {
+        _engine.PersistingBlock.Advance(elapsed);
+    }
+
     public void MintNeo(UInt160 to, BigInteger amount)
     {
         var funding = SelectNeoFundingAccount();
