@@ -28,6 +28,11 @@ namespace TrustAnchor.Tests;
 public sealed class TrustAnchorFixture
 {
     private static readonly string CompilerDir = FindCompilerDirectory();
+    private static readonly object CompileCacheLock = new();
+    private static (NefFile nef, ContractManifest manifest)? _cachedTrustContract;
+    private static (NefFile nef, ContractManifest manifest)? _cachedTestAgentContract;
+    private static readonly Dictionary<string, (NefFile nef, ContractManifest manifest)> CachedAuthAgents = new();
+    private static int _compileInvocationCount;
 
     private static string FindCompilerDirectory()
     {
@@ -70,6 +75,19 @@ public sealed class TrustAnchorFixture
 
     private static bool _resolverInitialized;
 
+    public static int CompileInvocationsForTests => _compileInvocationCount;
+
+    public static void ResetCompileInvocationsForTests()
+    {
+        lock (CompileCacheLock)
+        {
+            _compileInvocationCount = 0;
+            _cachedTrustContract = null;
+            _cachedTestAgentContract = null;
+            CachedAuthAgents.Clear();
+        }
+    }
+
     private readonly TestEngine _engine;
     private readonly Signer _ownerSigner;
     private readonly Signer _userSigner;
@@ -111,13 +129,15 @@ public sealed class TrustAnchorFixture
         _otherSigner = new Signer { Account = OtherHash, Scopes = WitnessScope.CalledByEntry };
         _strangerSigner = new Signer { Account = StrangerHash, Scopes = WitnessScope.CalledByEntry };
 
-        var trustSources = PatchTrustAnchorSources(OwnerHash);
-        var (nef, manifest) = CompileSources(trustSources);
-        var contract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(nef, manifest, null, null);
+        var trustCompiled = GetOrCreateTrustContract(OwnerHash);
+        var trustNef = trustCompiled.nef;
+        var trustManifest = trustCompiled.manifest;
+        var contract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(trustNef, trustManifest, null, null);
         TrustHash = contract.Hash;
 
-        var agentSource = TestAgentSource();
-        var (agentNef, agentManifest) = CompileSource(agentSource);
+        var agentCompiled = GetOrCreateTestAgentContract();
+        var agentNef = agentCompiled.nef;
+        var agentManifest = agentCompiled.manifest;
         _agentHashes = new UInt160[21];
         for (int i = 0; i < _agentHashes.Length; i++)
         {
@@ -246,13 +266,64 @@ public sealed class TrustAnchorFixture
 
     public UInt160 DeployAuthAgent()
     {
-        var agentSource = AuthAgentSource().Replace("[TODO]: ARGS", TrustHash.ToString());
-        var (agentNef, agentManifest) = CompileSource(agentSource);
+        var authCompiled = GetOrCreateAuthAgentContract(TrustHash);
+        var agentNef = authCompiled.nef;
+        var agentManifest = authCompiled.manifest;
         var deployer = new UInt160(Enumerable.Repeat((byte)0x42, 20).ToArray());
         _engine.SetTransactionSigners(new[] { new Signer { Account = deployer, Scopes = WitnessScope.CalledByEntry } });
         var agentContract = _engine.Deploy<Neo.SmartContract.Testing.SmartContract>(agentNef, agentManifest, null, null);
         AuthAgentHash = agentContract.Hash;
         return AuthAgentHash;
+    }
+
+    private static (NefFile nef, ContractManifest manifest) GetOrCreateTrustContract(UInt160 ownerHash)
+    {
+        lock (CompileCacheLock)
+        {
+            if (_cachedTrustContract.HasValue)
+            {
+                return _cachedTrustContract.Value;
+            }
+
+            var trustSources = PatchTrustAnchorSources(ownerHash);
+            var (nef, manifest) = CompileSources(trustSources);
+            _cachedTrustContract = (nef, manifest);
+            return _cachedTrustContract.Value;
+        }
+    }
+
+    private static (NefFile nef, ContractManifest manifest) GetOrCreateTestAgentContract()
+    {
+        lock (CompileCacheLock)
+        {
+            if (_cachedTestAgentContract.HasValue)
+            {
+                return _cachedTestAgentContract.Value;
+            }
+
+            var agentSource = TestAgentSource();
+            var (nef, manifest) = CompileSource(agentSource);
+            _cachedTestAgentContract = (nef, manifest);
+            return _cachedTestAgentContract.Value;
+        }
+    }
+
+    private static (NefFile nef, ContractManifest manifest) GetOrCreateAuthAgentContract(UInt160 trustHash)
+    {
+        lock (CompileCacheLock)
+        {
+            var key = trustHash.ToString();
+            if (CachedAuthAgents.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
+            var agentSource = AuthAgentSource().Replace("[TODO]: ARGS", key);
+            var (nef, manifest) = CompileSource(agentSource);
+            var compiled = (nef, manifest);
+            CachedAuthAgents[key] = compiled;
+            return compiled;
+        }
     }
 
     public UInt160 AuthAgentLastTransferTo()
@@ -479,6 +550,7 @@ public class AuthAgent : SmartContract
 
     private static (NefFile nef, ContractManifest manifest) CompileSources(string[] sources)
     {
+        _compileInvocationCount++;
         EnsureCompilerResolver();
         var compilerPath = Path.Combine(CompilerDir, "nccs.dll");
         if (!File.Exists(compilerPath))

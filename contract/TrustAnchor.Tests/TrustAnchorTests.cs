@@ -29,6 +29,27 @@ public class TrustAnchorTests
     }
 
     [Fact]
+    public void Fixture_reuses_compiled_contract_artifacts_between_instances()
+    {
+        TrustAnchorFixture.ResetCompileInvocationsForTests();
+
+        var fixture1 = new TrustAnchorFixture();
+        var fixture2 = new TrustAnchorFixture();
+
+        Assert.NotEqual(UInt160.Zero, fixture1.TrustHash);
+        Assert.NotEqual(UInt160.Zero, fixture2.TrustHash);
+        Assert.Equal(2, TrustAnchorFixture.CompileInvocationsForTests);
+
+        var fixture3 = new TrustAnchorFixture();
+        Assert.NotEqual(UInt160.Zero, fixture3.TrustHash);
+        Assert.Equal(2, TrustAnchorFixture.CompileInvocationsForTests);
+
+        fixture1.DeployAuthAgent();
+        fixture2.DeployAuthAgent();
+        Assert.Equal(3, TrustAnchorFixture.CompileInvocationsForTests);
+    }
+
+    [Fact]
     public void IsPaused_is_exposed_for_agents()
     {
         var fixture = new TrustAnchorFixture();
@@ -661,7 +682,7 @@ public class TrustAnchorTests
         fixture.CallFrom(fixture.OwnerHash, "pause");
 
         fixture.MintNeo(fixture.UserHash, 5);
-        AssertFault(() => fixture.NeoTransfer(fixture.UserHash, fixture.TrustHash, 1));
+        AssertFault(() => fixture.InvokeNeoPayment(fixture.UserHash, 1));
     }
 
     [Fact]
