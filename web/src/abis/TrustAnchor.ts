@@ -206,7 +206,6 @@ export const getExplorerUrl = (
 // ----------------------------------------
 
 export const CONSTANTS = {
-  MAX_AGENTS: 21,
   RPS_SCALE: 100000000,
   OWNER_TRANSFER_DELAY: 3 * 24 * 3600, // 3 days in seconds
   MAX_AGENT_NAME_LENGTH: 32,

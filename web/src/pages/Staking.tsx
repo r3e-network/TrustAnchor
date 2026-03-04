@@ -94,7 +94,7 @@ function DepositForm({ connected, isPaused, onDeposit }: DepositFormProps) {
 
   if (!connected) {
     return (
-      <div className="text-center py-8 bg-slate-900/50 rounded-lg">
+      <div className="text-center py-8 bg-neo-dark/50 rounded-lg">
         <p className="text-slate-500">Connect your wallet to deposit</p>
       </div>
     );
@@ -185,7 +185,7 @@ function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
 
   if (!connected) {
     return (
-      <div className="text-center py-8 bg-slate-900/50 rounded-lg">
+      <div className="text-center py-8 bg-neo-dark/50 rounded-lg">
         <p className="text-slate-500">Connect your wallet to withdraw</p>
       </div>
     );
@@ -193,7 +193,7 @@ function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
 
   if (parseInt(maxAmount, 10) <= 0) {
     return (
-      <div className="text-center py-8 bg-slate-900/50 rounded-lg">
+      <div className="text-center py-8 bg-neo-dark/50 rounded-lg">
         <p className="text-slate-500">You have no staked NEO</p>
       </div>
     );
@@ -211,7 +211,7 @@ function WithdrawForm({ connected, maxAmount, onWithdraw }: WithdrawFormProps) {
         step="1"
         max={maxAmount}
         rightIcon={
-          <button onClick={handleMaxClick} className="text-xs text-green-400 hover:text-green-300">
+          <button onClick={handleMaxClick} className="text-xs text-neo-green hover:text-green-300">
             Max
           </button>
         }
@@ -426,8 +426,8 @@ export function Staking({
         <ActionCard
           title="Deposit NEO"
           description="Stake NEO to start earning rewards"
-          icon={<ArrowDownCircle className="w-6 h-6 text-green-400" />}
-          iconColor="bg-green-500/20"
+          icon={<ArrowDownCircle className="w-6 h-6 text-neo-green" />}
+          iconColor="bg-neo-green/20"
         >
           <DepositForm connected={connected} isPaused={isPaused} onDeposit={deposit} />
         </ActionCard>

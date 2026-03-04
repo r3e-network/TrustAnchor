@@ -41,10 +41,6 @@ TrustAnchor/
 │   ├── TrustAnchorAgent/          # Agent contract for voting
 │   ├── TrustAnchor.Tests/         # Test suite
 │   └── README.md                  # Contract documentation
-├── TrustAnchor/                   # Operational automation tools
-│   ├── TrustAnchorClaimer         # Automated GAS claiming
-│   ├── TrustAnchorRepresentative  # Automated GAS distribution
-│   └── README.md                  # Ops documentation
 ├── web/                            # React + TypeScript dashboard
 ├── scripts/                        # Deployment and utility scripts
 ├── docs/                           # Design plans and security docs
@@ -127,7 +123,7 @@ Unlike traditional voting systems that concentrate power based on wealth or extr
 ### Prerequisites
 
 - .NET 9.0 SDK (contracts/tests)
-- .NET 10.0 SDK (ops tools)
+- Node.js 20+ (web dashboard)
 - Neo.Compiler.CSharp 3.8.1+
 
 ### Building Contracts
@@ -144,20 +140,7 @@ dotnet test TrustAnchor.Tests/TrustAnchor.Tests.csproj
 ## Documentation
 
 - Contract overview: [contract/README.md](contract/README.md)
-- Ops tooling: [TrustAnchor/README.md](TrustAnchor/README.md)
 - 中文：质押与奖励计算算法与正确性说明: [docs/zh/staking-reward-correctness.md](docs/zh/staking-reward-correctness.md)
-
-## Operations
-
-The [TrustAnchor/](TrustAnchor/) folder contains automated tools for operational tasks:
-
-- **TrustAnchorClaimer** - Automatically claims GAS from Agent contracts
-- **TrustAnchorRepresentative** - Distributes GAS back to stakers
-- **TrustAnchorDeployer** - Deploys TrustAnchor and Agent contracts
-- **ConfigureAgent** - Updates agent target/name/voting amount
-- **KeyGenerator** - Generates secure NEO wallets
-
-See [TrustAnchor/README.md](TrustAnchor/README.md) for details.
 
 ## License
 

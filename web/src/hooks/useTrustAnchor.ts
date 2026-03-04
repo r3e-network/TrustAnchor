@@ -52,6 +52,7 @@ interface UseTrustAnchorReturn {
   readonly proposeOwner: (newOwner: string) => Promise<TransactionResult>;
   readonly acceptOwner: () => Promise<TransactionResult>;
   readonly cancelOwnerProposal: () => Promise<TransactionResult>;
+  readonly rebalanceAgentNEO: (sourceIndex: number, destIndex: number, amount: number) => Promise<TransactionResult>;
 }
 
 // Contract hashes per network
@@ -132,6 +133,7 @@ export function useTrustAnchor(): UseTrustAnchorReturn {
               target: String(info[2]?.value || ""),
               name: String(info[3]?.value || ""),
               voting: String(info[4]?.value || "0"),
+              balance: formatNeo(String(info[5]?.value || "0")),
             });
           }
         } catch (e) {
@@ -413,6 +415,20 @@ export function useTrustAnchor(): UseTrustAnchorReturn {
     return invoke(contractHash, "cancelOwnerProposal", []);
   }, [contractHash, isOwner, invoke]);
 
+  const rebalanceAgentNEO = useCallback(
+    async (sourceIndex: number, destIndex: number, amount: number): Promise<TransactionResult> => {
+      if (!contractHash) {
+        return { txid: "", status: "error", message: "Contract not initialized" };
+      }
+      if (!isOwner) {
+        return { txid: "", status: "error", message: "Not authorized" };
+      }
+
+      return invoke(contractHash, "rebalanceAgentNEO", [sourceIndex, destIndex, amount]);
+    },
+    [contractHash, isOwner, invoke],
+  );
+
   // Clear error from both wallet and local state
   const clearError = useCallback(() => {
     clearWalletError();
@@ -462,5 +478,6 @@ export function useTrustAnchor(): UseTrustAnchorReturn {
     proposeOwner,
     acceptOwner,
     cancelOwnerProposal,
+    rebalanceAgentNEO,
   };
 }

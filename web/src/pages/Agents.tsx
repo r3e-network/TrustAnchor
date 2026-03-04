@@ -9,7 +9,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Card, Badge, EmptyState, Button, LoadingSpinner, Input } from '../components';
-import { shortenHash, CONSTANTS } from '../abis/TrustAnchor';
+import { shortenHash } from '../abis/TrustAnchor';
 import type { Agent, TransactionResult } from '../types';
 
 // ============================================
@@ -85,7 +85,7 @@ function AgentCard({ agent, isOwner, onVote }: AgentCardProps) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Agent Info */}
         <div className="flex items-start space-x-4">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center flex-shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neo-light to-neo-gray flex items-center justify-center flex-shrink-0">
             <span className="text-lg font-bold text-slate-400">#{agent.index}</span>
           </div>
           
@@ -114,13 +114,18 @@ function AgentCard({ agent, isOwner, onVote }: AgentCardProps) {
 
         {/* Actions */}
         <div className="flex items-center space-x-6">
-          <div className="text-right">
-            <div className="text-sm text-slate-500">Voting Priority</div>
-            <div className="text-xl font-bold text-white">{agent.voting}</div>
+          <div className="flex space-x-6">
+            <div className="text-right">
+              <div className="text-sm text-slate-500">Votes (NEO)</div>
+              <div className="text-xl font-bold text-neo-green">{agent.balance}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-slate-500">Priority</div>
+              <div className="text-xl font-bold text-white">{agent.voting}</div>
+            </div>
           </div>
-          
-          {isOwner && (
-            <Button
+
+          {isOwner && (            <Button
               variant="secondary"
               size="sm"
               onClick={handleVote}
@@ -134,11 +139,11 @@ function AgentCard({ agent, isOwner, onVote }: AgentCardProps) {
       </div>
 
       {/* Expanded Details */}
-      <div className="mt-4 pt-4 border-t border-slate-700/50 opacity-0 group-hover:opacity-100 transition-opacity hidden lg:block">
+      <div className="mt-4 pt-4 border-t border-neo-light/50 opacity-0 group-hover:opacity-100 transition-opacity hidden lg:block">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-slate-500">Agent Contract:</span>
-            <span className="ml-2 text-green-400 font-mono break-all">{agent.address}</span>
+            <span className="ml-2 text-neo-green font-mono break-all">{agent.address}</span>
           </div>
           <div>
             <span className="text-slate-500">Voting Target:</span>
@@ -186,15 +191,15 @@ function HowItWorksSection() {
         {WORKFLOW_STEPS.map((item, i) => (
           <div key={i} className="relative">
             <div className="flex items-center space-x-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                <span className="text-sm font-bold text-green-400">{item.step}</span>
+              <div className="w-8 h-8 rounded-full bg-neo-green/20 flex items-center justify-center">
+                <span className="text-sm font-bold text-neo-green">{item.step}</span>
               </div>
               <h3 className="font-semibold text-white">{item.title}</h3>
             </div>
             <p className="text-sm text-slate-400 pl-11">{item.desc}</p>
             
             {i < WORKFLOW_STEPS.length - 1 && (
-              <div className="hidden md:block absolute top-4 left-full w-full h-px bg-gradient-to-r from-green-500/50 to-transparent" />
+              <div className="hidden md:block absolute top-4 left-full w-full h-px bg-gradient-to-r from-neo-green/50 to-transparent" />
             )}
           </div>
         ))}
@@ -227,14 +232,13 @@ export function Agents({ agents, isOwner, loading, voteAgent }: AgentsProps) {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Agents</h1>
           <p className="text-slate-400">
-            TrustAnchor uses up to {CONSTANTS.MAX_AGENTS} agents to delegate voting power 
+            TrustAnchor uses agents to delegate voting power 
             to active contributors and reputable community members.
           </p>
         </div>
         <div className="flex items-center space-x-2 text-sm">
           <span className="text-slate-500">Total Agents:</span>
           <span className="font-bold text-white">{agents.length}</span>
-          <span className="text-slate-500">/ {CONSTANTS.MAX_AGENTS}</span>
         </div>
       </div>
 
@@ -243,8 +247,8 @@ export function Agents({ agents, isOwner, loading, voteAgent }: AgentsProps) {
         <InfoCard
           title="Voting Delegation"
           description="Each agent votes for a specific candidate in the NEO consensus. Higher voting priority means more NEO deposits are routed to that agent."
-          icon={<Vote className="w-5 h-5 text-green-400" />}
-          iconColor="bg-green-500/20"
+          icon={<Vote className="w-5 h-5 text-neo-green" />}
+          iconColor="bg-neo-green/20"
         />
         <InfoCard
           title="Reward Distribution"

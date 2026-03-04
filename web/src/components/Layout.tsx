@@ -76,7 +76,7 @@ function NavLink({ item, isActive, onClick }: NavLinkProps) {
       onClick={onClick}
       className={`
         flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200
-        ${isActive ? "bg-green-500/20 text-green-400" : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"}
+        ${isActive ? "bg-neo-green/20 text-neo-green" : "text-slate-400 hover:text-slate-100 hover:bg-neo-gray"}
       `}
     >
       <Icon className="w-4 h-4" />
@@ -136,17 +136,17 @@ export function Layout({
   const currentNetworkLabel = network === "testnet" ? "Testnet" : "Mainnet";
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
+    <div className="min-h-screen bg-neo-dark flex flex-col">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-slate-700/50">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-neo-dark/80 backdrop-blur-lg border-b border-neo-light/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neo-green to-emerald-600 flex items-center justify-center shadow-lg shadow-neo-green/20">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500 hidden sm:block">
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neo-green to-emerald-500 hidden sm:block">
                 TrustAnchor
               </span>
             </Link>
@@ -164,7 +164,7 @@ export function Layout({
               <div className="relative" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => setNetworkDropdownOpen(!networkDropdownOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-slate-800 rounded-lg text-sm font-medium text-slate-300 hover:bg-slate-700 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-2 bg-neo-gray rounded-lg text-sm font-medium text-slate-300 hover:bg-neo-light transition-colors"
                   aria-label="Select network"
                   aria-expanded={networkDropdownOpen}
                 >
@@ -174,7 +174,7 @@ export function Layout({
                 </button>
 
                 {networkDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-slate-800 rounded-xl border border-slate-700 shadow-xl z-20 py-1">
+                  <div className="absolute right-0 mt-2 w-40 bg-neo-gray rounded-xl border border-neo-light shadow-xl z-20 py-1">
                     {(["testnet", "mainnet"] as NetworkType[]).map((net) => (
                       <button
                         key={net}
@@ -183,8 +183,8 @@ export function Layout({
                           setNetworkDropdownOpen(false);
                         }}
                         className={`
-                          w-full px-4 py-2 text-left text-sm hover:bg-slate-700 transition-colors
-                          ${network === net ? "text-green-400" : "text-slate-300"}
+                          w-full px-4 py-2 text-left text-sm hover:bg-neo-light transition-colors
+                          ${network === net ? "text-neo-green" : "text-slate-300"}
                         `}
                       >
                         {net === "testnet" ? "Testnet" : "Mainnet"}
@@ -197,8 +197,8 @@ export function Layout({
               {/* Wallet Connection */}
               {connected ? (
                 <div className="flex items-center space-x-2">
-                  <div className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-slate-800 rounded-lg">
-                    <Wallet className="w-4 h-4 text-green-400" />
+                  <div className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-neo-gray rounded-lg">
+                    <Wallet className="w-4 h-4 text-neo-green" />
                     <span className="text-sm font-medium text-slate-300">{formatAddress(address!)}</span>
                     {isOwner && (
                       <Badge variant="purple" size="sm">
@@ -208,7 +208,7 @@ export function Layout({
                   </div>
                   <button
                     onClick={disconnect}
-                    className="p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-700 transition-colors"
+                    className="p-2 bg-neo-gray rounded-lg text-slate-400 hover:text-red-400 hover:bg-neo-light transition-colors"
                     title="Disconnect"
                     aria-label="Disconnect wallet"
                   >
@@ -219,7 +219,7 @@ export function Layout({
                 <button
                   onClick={handleConnect}
                   disabled={connecting}
-                  className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  className="px-6 py-3 bg-gradient-to-r from-neo-green to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-500 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-neo-green/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
                   <Wallet className="w-4 h-4" />
                   <span>{connecting ? "Connecting..." : "Connect"}</span>
@@ -229,7 +229,7 @@ export function Layout({
               {/* Mobile menu button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 bg-slate-800 rounded-lg text-slate-400 hover:text-slate-100"
+                className="md:hidden p-2 bg-neo-gray rounded-lg text-slate-400 hover:text-slate-100"
                 aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
                 aria-expanded={mobileMenuOpen}
               >
@@ -241,7 +241,7 @@ export function Layout({
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden border-t border-slate-700/50" aria-label="Mobile navigation">
+          <nav className="md:hidden border-t border-neo-light/50" aria-label="Mobile navigation">
             <div className="px-4 py-3 space-y-1">
               {visibleNavItems.map((item) => (
                 <NavLink
@@ -273,7 +273,7 @@ export function Layout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800">
+      <footer className="border-t border-neo-gray">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-2 text-slate-500 text-sm">

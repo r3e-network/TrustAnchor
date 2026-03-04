@@ -16,7 +16,7 @@ interface StatCardProps {
 
 const iconColorClasses = {
   blue: 'bg-blue-500/20 text-blue-400',
-  green: 'bg-green-500/20 text-green-400',
+  green: 'bg-neo-green/20 text-neo-green',
   purple: 'bg-purple-500/20 text-purple-400',
   yellow: 'bg-yellow-500/20 text-yellow-400',
   red: 'bg-red-500/20 text-red-400',
@@ -43,8 +43,8 @@ export function StatCard({
       
       {isLoading ? (
         <div className="animate-pulse">
-          <div className="h-8 bg-slate-700/50 rounded w-24" />
-          {subtitle && <div className="h-4 bg-slate-700/50 rounded w-16 mt-2" />}
+          <div className="h-8 bg-neo-light/50 rounded w-24" />
+          {subtitle && <div className="h-4 bg-neo-light/50 rounded w-16 mt-2" />}
         </div>
       ) : (
         <>

@@ -35,15 +35,15 @@ interface HeroSectionProps {
 
 function HeroSection({ isPaused }: HeroSectionProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700/50 p-8">
+    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-neo-gray to-neo-dark border border-neo-light/50 p-8">
       {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute top-0 right-0 w-64 h-64 bg-neo-green/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <Shield className="w-6 h-6 text-green-400" />
+            <div className="p-2 bg-neo-green/20 rounded-lg">
+              <Shield className="w-6 h-6 text-neo-green" />
             </div>
             <h1 className="text-3xl font-bold text-white">TrustAnchor Dashboard</h1>
           </div>
@@ -67,7 +67,7 @@ function HeroSection({ isPaused }: HeroSectionProps) {
         <div className="flex flex-wrap gap-4">
           <Link
             to="/staking"
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-neo-green hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors"
           >
             <TrendingUp className="w-5 h-5" />
             <span>Start Staking</span>
@@ -75,7 +75,7 @@ function HeroSection({ isPaused }: HeroSectionProps) {
           </Link>
           <Link
             to="/agents"
-            className="inline-flex items-center space-x-2 px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors"
+            className="inline-flex items-center space-x-2 px-6 py-3 bg-neo-light hover:bg-slate-600 text-white font-semibold rounded-lg transition-colors"
           >
             <Users className="w-5 h-5" />
             <span>View Agents</span>
@@ -113,7 +113,7 @@ function StatsGrid({ totalStake, agentCount, userStake, userReward, loading, con
       <StatCard
         title="Active Agents"
         value={loading ? "..." : agentCount}
-        subtitle="of 21 max"
+        subtitle="registered"
         icon={<Users className="w-6 h-6" />}
         iconColor="purple"
         isLoading={loading}
@@ -156,8 +156,8 @@ function ContractInfoCard({ network, contractHash, owner, isPaused, isOwner }: C
   return (
     <Card>
       <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-slate-700/50 rounded-lg">
-          <Shield className="w-5 h-5 text-green-400" />
+        <div className="p-2 bg-neo-light/50 rounded-lg">
+          <Shield className="w-5 h-5 text-neo-green" />
         </div>
         <h2 className="text-xl font-bold text-white">Contract Information</h2>
       </div>
@@ -177,7 +177,7 @@ function ContractInfoCard({ network, contractHash, owner, isPaused, isOwner }: C
         <InfoRow
           label="Status"
           value={isPaused ? "Paused" : "Active"}
-          valueColor={isPaused ? "text-red-400" : "text-green-400"}
+          valueColor={isPaused ? "text-red-400" : "text-neo-green"}
         />
       </div>
     </Card>
@@ -202,7 +202,7 @@ function UserPositionCard({ connected, address, stake, reward, totalStake }: Use
   return (
     <Card>
       <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-slate-700/50 rounded-lg">
+        <div className="p-2 bg-neo-light/50 rounded-lg">
           <Wallet className="w-5 h-5 text-blue-400" />
         </div>
         <h2 className="text-xl font-bold text-white">Your Position</h2>
@@ -219,7 +219,7 @@ function UserPositionCard({ connected, address, stake, reward, totalStake }: Use
           <InfoRow label="Connected Address" value={shortenHash(address ?? "")} />
           <InfoRow label="Your Stake" value={`${formatNumber(stake)} NEO`} />
           <InfoRow label="Share of Pool" value={`${poolShare}%`} />
-          <InfoRow label="Claimable Rewards" value={`${formatNumber(reward)} GAS`} valueColor="text-green-400" />
+          <InfoRow label="Claimable Rewards" value={`${formatNumber(reward)} GAS`} valueColor="text-neo-green" />
         </div>
       )}
     </Card>
@@ -239,14 +239,14 @@ function AgentsPreview({ agents }: AgentsPreviewProps) {
     <Card>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-slate-700/50 rounded-lg">
+          <div className="p-2 bg-neo-light/50 rounded-lg">
             <Users className="w-5 h-5 text-purple-400" />
           </div>
           <h2 className="text-xl font-bold text-white">Active Agents</h2>
         </div>
         <Link
           to="/agents"
-          className="text-green-400 hover:text-green-300 text-sm font-medium flex items-center space-x-1"
+          className="text-neo-green hover:text-green-300 text-sm font-medium flex items-center space-x-1"
         >
           <span>View All</span>
           <ArrowRight className="w-4 h-4" />
@@ -275,7 +275,7 @@ function AgentsPreview({ agents }: AgentsPreviewProps) {
 
 function AgentCard({ agent }: { agent: Agent }) {
   return (
-    <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600 transition-colors">
+    <div className="bg-neo-dark/50 rounded-lg p-4 border border-neo-light/50 hover:border-slate-600 transition-colors">
       <div className="flex items-center justify-between mb-2">
         <span className="font-semibold text-white">{agent.name}</span>
         <span className="text-xs text-slate-500">#{agent.index}</span>
@@ -283,7 +283,7 @@ function AgentCard({ agent }: { agent: Agent }) {
       <div className="text-xs text-slate-400 font-mono mb-2">{shortenHash(agent.address, 8, 6)}</div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-slate-500">Priority:</span>
-        <span className="text-green-400 font-medium">{agent.voting}</span>
+        <span className="text-neo-green font-medium">{agent.voting}</span>
       </div>
     </div>
   );
@@ -303,7 +303,7 @@ interface InfoRowProps {
 
 function InfoRow({ label, value, link, badge, valueColor = "text-white" }: InfoRowProps) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-slate-700/50 last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-neo-light/50 last:border-0">
       <span className="text-slate-400">{label}</span>
       <div className="flex items-center space-x-2">
         {link ? (
@@ -311,7 +311,7 @@ function InfoRow({ label, value, link, badge, valueColor = "text-white" }: InfoR
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-mono text-sm text-green-400 hover:text-green-300"
+            className="font-mono text-sm text-neo-green hover:text-green-300"
           >
             {value}
           </a>

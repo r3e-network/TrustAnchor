@@ -61,9 +61,9 @@ export function Modal({ isOpen, onClose, title, children, icon, iconVariant = "d
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       {/* Modal */}
-      <div className="relative bg-slate-800 rounded-2xl border border-slate-700 max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-neo-gray rounded-2xl border border-neo-light max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
+        <div className="flex items-center justify-between p-6 border-b border-neo-light">
           <div className="flex items-center space-x-3">
             {icon && (
               <div className={`p-2 rounded-lg ${iconVariantClasses[iconVariant]}`}>
@@ -76,7 +76,7 @@ export function Modal({ isOpen, onClose, title, children, icon, iconVariant = "d
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-white hover:bg-neo-light rounded-lg transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />

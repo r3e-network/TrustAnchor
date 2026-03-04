@@ -12,6 +12,7 @@ export interface Agent {
   readonly target: string;
   readonly name: string;
   readonly voting: string;
+  readonly balance: string;
 }
 
 export interface AgentFormData {

@@ -37,7 +37,6 @@ namespace TrustAnchor
             ExecutionEngine.Assert(targetToId.Get(targetKey) is null, "Target already registered");
 
             var count = AgentCount();
-            ExecutionEngine.Assert(count < MAXAGENTS_BIG, "Maximum 21 agents");
 
             var key = (ByteString)count;
             new StorageMap(Storage.CurrentContext, PREFIXAGENT).Put(key, agent);

@@ -38,6 +38,7 @@ interface AdminProps {
   readonly proposeOwner: (newOwner: string) => Promise<TransactionResult>;
   readonly acceptOwner: () => Promise<TransactionResult>;
   readonly cancelOwnerProposal: () => Promise<TransactionResult>;
+  readonly rebalanceAgentNEO: (sourceIndex: number, destIndex: number, amount: number) => Promise<TransactionResult>;
   readonly fetchContractState: () => Promise<void>;
 }
 
@@ -142,7 +143,7 @@ function RegisterAgentForm({ onRegister, onSuccess }: RegisterAgentFormProps) {
       <div className="flex items-start space-x-2 p-3 bg-blue-500/10 rounded-lg">
         <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-blue-400">
-          Maximum {CONSTANTS.MAX_AGENTS} agents allowed. Each agent needs a unique name and target.
+          Each agent needs a unique name and target. Agent hashes can be derived from existing agent contract addresses.
         </p>
       </div>
 
@@ -217,7 +218,7 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
         <select
           value={selectedIndex}
           onChange={(e) => setSelectedIndex(e.target.value)}
-          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50"
+          className="w-full px-4 py-3 bg-neo-dark/50 border border-neo-light rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-neo-green/50 focus:border-neo-green/50"
         >
           <option value="">Choose an agent...</option>
           {agents.map((agent) => (
@@ -228,7 +229,7 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
         </select>
       </div>
 
-      <div className="border-t border-slate-700/50 pt-4">
+      <div className="border-t border-neo-light/50 pt-4">
         <Input
           label="Update Target"
           value={target}
@@ -248,7 +249,7 @@ function UpdateAgentForm({ agents, onUpdateTarget, onUpdateName, onSuccess }: Up
         />
       </div>
 
-      <div className="border-t border-slate-700/50 pt-4">
+      <div className="border-t border-neo-light/50 pt-4">
         <Input
           label="Update Name"
           value={name}
@@ -327,7 +328,7 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
         <select
           value={selectedIndex}
           onChange={(e) => setSelectedIndex(e.target.value)}
-          className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50"
+          className="w-full px-4 py-3 bg-neo-dark/50 border border-neo-light rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-neo-green/50 focus:border-neo-green/50"
         >
           <option value="">Choose an agent...</option>
           {agents.map((agent) => (
@@ -339,7 +340,7 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
       </div>
 
       {selectedAgent && (
-        <div className="p-4 bg-slate-900/50 rounded-lg">
+        <div className="p-4 bg-neo-dark/50 rounded-lg">
           <p className="text-sm text-slate-400 mb-1">Current voting target:</p>
           <p className="font-mono text-sm text-white break-all">{selectedAgent.target}</p>
         </div>
@@ -366,7 +367,7 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
         </Button>
       </div>
 
-      <div className="border-t border-slate-700/50 pt-6">
+      <div className="border-t border-neo-light/50 pt-6">
         <Button
           variant="secondary"
           onClick={handleVote}
@@ -381,6 +382,101 @@ function VotingConfigForm({ agents, onSetVoting, onVote, onSuccess }: VotingConf
           Triggers the agent to vote for its configured target candidate on the NEO network.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// Move Votes Form Component
+// ============================================
+
+interface MoveVotesFormProps {
+  agents: Agent[];
+  onRebalance: (sourceIndex: number, destIndex: number, amount: number) => Promise<TransactionResult>;
+  onSuccess: () => void;
+}
+
+function MoveVotesForm({ agents, onRebalance, onSuccess }: MoveVotesFormProps) {
+  const [sourceIndex, setSourceIndex] = useState("");
+  const [destIndex, setDestIndex] = useState("");
+  const [amount, setAmount] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleRebalance = async () => {
+    if (!sourceIndex || !destIndex || !amount) return;
+    if (sourceIndex === destIndex) {
+      toast.error("Source and destination must be different");
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await onRebalance(parseInt(sourceIndex), parseInt(destIndex), parseInt(amount));
+    setIsLoading(false);
+
+    if (result.status !== "error") {
+      toast.success("Votes moved successfully!");
+      setAmount("");
+      setSourceIndex("");
+      setDestIndex("");
+      onSuccess();
+    } else {
+      toast.error(result.message || "Failed to move votes");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-slate-400 mb-2">From Agent</label>
+        <select
+          value={sourceIndex}
+          onChange={(e) => setSourceIndex(e.target.value)}
+          className="w-full px-4 py-3 bg-neo-dark/50 border border-neo-light rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-neo-green/50 focus:border-neo-green/50"
+        >
+          <option value="">Select source agent...</option>
+          {agents.map((agent) => (
+            <option key={agent.index} value={agent.index}>
+              #{agent.index} - {agent.name} (Priority: {agent.voting}, Votes: {agent.balance} NEO)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-400 mb-2">To Agent</label>
+        <select
+          value={destIndex}
+          onChange={(e) => setDestIndex(e.target.value)}
+          className="w-full px-4 py-3 bg-neo-dark/50 border border-neo-light rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-neo-green/50 focus:border-neo-green/50"
+        >
+          <option value="">Select destination agent...</option>
+          {agents.map((agent) => (
+            <option key={agent.index} value={agent.index}>
+              #{agent.index} - {agent.name} (Priority: {agent.voting}, Votes: {agent.balance} NEO)
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <Input
+        type="number"
+        label="Amount (NEO Votes)"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="Enter whole number"
+        min="1"
+        step="1"
+      />
+
+      <Button
+        onClick={handleRebalance}
+        isLoading={isLoading}
+        disabled={!sourceIndex || !destIndex || !amount || sourceIndex === destIndex}
+        fullWidth
+        className="mt-2"
+      >
+        Move Votes
+      </Button>
     </div>
   );
 }
@@ -423,7 +519,7 @@ function ContractControls({ isPaused, onPause, onUnpause, onRefresh }: ContractC
             <h2 className="text-lg font-semibold text-white">Contract Status</h2>
             <p className="text-sm text-slate-400">
               Current state:{" "}
-              <span className={isPaused ? "text-red-400" : "text-green-400"}>{isPaused ? "Paused" : "Active"}</span>
+              <span className={isPaused ? "text-red-400" : "text-neo-green"}>{isPaused ? "Paused" : "Active"}</span>
             </p>
           </div>
         </div>
@@ -591,6 +687,7 @@ export function Admin({
   proposeOwner,
   acceptOwner,
   cancelOwnerProposal,
+  rebalanceAgentNEO,
   fetchContractState,
 }: AdminProps) {
   const [activeTab, setActiveTab] = useState<TabId>("agents");
@@ -642,7 +739,7 @@ export function Admin({
       <ContractControls isPaused={isPaused} onPause={pause} onUnpause={unpause} onRefresh={fetchContractState} />
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-slate-800/50 p-1 rounded-xl">
+      <div className="flex space-x-1 bg-neo-gray/50 p-1 rounded-xl">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -651,7 +748,7 @@ export function Admin({
               onClick={() => setActiveTab(tab.id)}
               className={`
                 flex-1 flex items-center justify-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all
-                ${activeTab === tab.id ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}
+                ${activeTab === tab.id ? "bg-neo-light text-white" : "text-slate-400 hover:text-slate-200"}
               `}
             >
               <Icon className="w-4 h-4" />
@@ -665,7 +762,7 @@ export function Admin({
       <div className="space-y-6">
         {activeTab === "agents" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card header={{ title: "Register New Agent", icon: <UserPlus className="w-5 h-5 text-green-400" /> }}>
+            <Card header={{ title: "Register New Agent", icon: <UserPlus className="w-5 h-5 text-neo-green" /> }}>
               <RegisterAgentForm onRegister={registerAgent} onSuccess={handleSuccess} />
             </Card>
 
@@ -681,14 +778,24 @@ export function Admin({
         )}
 
         {activeTab === "voting" && (
-          <Card header={{ title: "Voting Configuration", icon: <Vote className="w-5 h-5 text-yellow-400" /> }}>
-            <VotingConfigForm
-              agents={agents}
-              onSetVoting={setAgentVoting}
-              onVote={voteAgent}
-              onSuccess={handleSuccess}
-            />
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card header={{ title: "Voting Configuration", icon: <Vote className="w-5 h-5 text-yellow-400" /> }}>
+              <VotingConfigForm
+                agents={agents}
+                onSetVoting={setAgentVoting}
+                onVote={voteAgent}
+                onSuccess={handleSuccess}
+              />
+            </Card>
+
+            <Card header={{ title: "Move Votes (Rebalance)", icon: <RefreshCw className="w-5 h-5 text-blue-400" /> }}>
+              <MoveVotesForm
+                agents={agents}
+                onRebalance={rebalanceAgentNEO}
+                onSuccess={handleSuccess}
+              />
+            </Card>
+          </div>
         )}
 
         {activeTab === "contract" && (

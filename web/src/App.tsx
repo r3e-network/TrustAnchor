@@ -16,7 +16,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-neo-green"></div>
     </div>
   );
 }
@@ -115,6 +115,7 @@ function App() {
                 proposeOwner={trustAnchor.proposeOwner}
                 acceptOwner={trustAnchor.acceptOwner}
                 cancelOwnerProposal={trustAnchor.cancelOwnerProposal}
+                rebalanceAgentNEO={trustAnchor.rebalanceAgentNEO}
                 fetchContractState={trustAnchor.fetchContractState}
               />
             }

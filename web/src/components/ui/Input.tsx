@@ -45,14 +45,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={`
-              w-full px-4 py-3 bg-slate-900/50 border rounded-lg 
+              w-full px-4 py-3 bg-neo-dark border rounded-lg 
               text-slate-100 placeholder-slate-500
-              focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50
+              focus:outline-none focus:ring-2 focus:ring-neo-green/50 focus:border-neo-green/50
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed
               ${leftIcon ? 'pl-12' : ''}
               ${rightIcon ? 'pr-12' : ''}
-              ${error ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/50' : 'border-slate-700'}
+              ${error ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/50' : 'border-neo-light'}
               ${props.type === 'number' ? '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none' : ''}
             `}
             {...props}

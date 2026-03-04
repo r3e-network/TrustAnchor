@@ -18,7 +18,7 @@ const sizeClasses = {
 
 export function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
   return (
-    <Loader2 className={`animate-spin text-green-500 ${sizeClasses[size]} ${className}`} />
+    <Loader2 className={`animate-spin text-neo-green ${sizeClasses[size]} ${className}`} />
   );
 }
 
@@ -44,14 +44,14 @@ interface SkeletonProps {
 
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
-    <div className={`animate-pulse bg-slate-700/50 rounded ${className}`} />
+    <div className={`animate-pulse bg-neo-light/50 rounded ${className}`} />
   );
 }
 
 // Skeleton Card
 export function SkeletonCard() {
   return (
-    <div className="bg-slate-800/80 rounded-xl border border-slate-700/50 p-6 space-y-4">
+    <div className="bg-neo-gray/80 rounded-xl border border-neo-light/50 p-6 space-y-4">
       <div className="flex items-center space-x-3">
         <Skeleton className="w-12 h-12 rounded-lg" />
         <div className="space-y-2">

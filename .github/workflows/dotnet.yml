@@ -43,6 +43,3 @@ jobs:
         run: dotnet build
         # Tests skipped on CI — runtime compilation hangs
         # TODO: Pre-compile contracts or fix runtime compilation for CI
-
-      - name: Build TrustAnchor Ops Projects
-        run: dotnet build TrustAnchor/TrustAnchor.sln

@@ -16,12 +16,12 @@ interface BadgeProps {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  success: 'bg-green-500/20 text-green-400 border-green-500/30',
-  warning: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  error: 'bg-red-500/20 text-red-400 border-red-500/30',
-  info: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  neutral: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
-  purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  success: 'bg-neo-green/10 text-neo-green border-neo-green/30',
+  warning: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  error: 'bg-red-500/10 text-red-400 border-red-500/30',
+  info: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  neutral: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+  purple: 'bg-purple-500/10 text-purple-400 border-purple-500/30',
 };
 
 const sizeClasses: Record<BadgeSize, string> = {

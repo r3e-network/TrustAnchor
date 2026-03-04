@@ -88,10 +88,6 @@ namespace TrustAnchor
         // Constants
         // ========================================
 
-        /// <summary>Number of agent contracts (fixed at 21)</summary>
-        private const int MAXAGENTS = 21;
-        private static readonly BigInteger MAXAGENTS_BIG = MAXAGENTS;
-
         /// <summary>Scale factor for reward calculations (8 decimal places)</summary>
         private static readonly BigInteger RPS_SCALE = 100000000;
 

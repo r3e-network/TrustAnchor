@@ -296,10 +296,6 @@ describe("CONTRACT_METHODS", () => {
 });
 
 describe("CONSTANTS", () => {
-  it("has correct max agents", () => {
-    expect(CONSTANTS.MAX_AGENTS).toBe(21);
-  });
-
   it("has correct RPS scale (10^8)", () => {
     expect(CONSTANTS.RPS_SCALE).toBe(100000000);
   });
